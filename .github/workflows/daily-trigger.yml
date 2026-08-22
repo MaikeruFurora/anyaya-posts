@@ -1,1 +1,56 @@
+# .github/workflows/daily-trigger.yml
+#
+# Ang alarm clock. Natutulog ang Render pagkatapos ng 15 minutong walang trapiko,
+# kaya hindi maaasahan ang orasan sa loob ng n8n. Ang GitHub ang gigising dito.
+#
+# Dalawang secret ang kailangan sa repo (Settings → Secrets and variables → Actions):
+#   N8N_WEBHOOK_URL  — hal. https://anyaya-n8n.onrender.com/webhook/anyaya-daily-post
+#   TRIGGER_SECRET   — mahabang random na teksto, kapareho ng nasa n8n
+name: Daily post trigger
 
+on:
+  schedule:
+    # 22:00 UTC = 6:00 AM sa Maynila. Minsan nahuhuli ang GitHub nang
+    # sampu hanggang tatlumpung minuto — walang halaga iyon sa araw-araw na post.
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  wake-and-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gisingin ang n8n at patakbuhin ang workflow
+        env:
+          URL:    ${{ secrets.N8N_WEBHOOK_URL }}
+          SECRET: ${{ secrets.TRIGGER_SECRET }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$SECRET" ]; then
+            echo "::error::Kulang ang N8N_WEBHOOK_URL o TRIGGER_SECRET sa repo secrets."
+            exit 1
+          fi
+
+          # Ang unang tawag ang gumigising sa Render, at maaaring mag-timeout —
+          # normal iyon. Susubukan natin hanggang tatlong beses, may pahinga.
+          for i in 1 2 3; do
+            echo "Subok $i…"
+            CODE=$(curl -s -o /tmp/out.txt -w '%{http_code}' \
+                     --max-time 120 \
+                     -X POST "$URL" \
+                     -H 'Content-Type: application/json' \
+                     -d "{\"secret\":\"$SECRET\",\"source\":\"github-cron\"}" || echo "000")
+
+            echo "HTTP $CODE"
+            if [ "$CODE" = "200" ] || [ "$CODE" = "201" ]; then
+              echo "✅ Natanggap ng n8n." >> $GITHUB_STEP_SUMMARY
+              cat /tmp/out.txt
+              exit 0
+            fi
+
+            # 000 = timeout habang gumigising ang Render. Hintayin at ulitin.
+            echo "Hindi pa handa. Maghihintay ng 60 segundo…"
+            sleep 60
+          done
+
+          echo "::error::Hindi tumugon ang n8n pagkatapos ng tatlong subok."
+          cat /tmp/out.txt || true
+          exit 1
