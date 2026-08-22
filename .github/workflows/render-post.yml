@@ -1,0 +1,84 @@
+# .github/workflows/render-post.yml
+#
+# Ito yung gumagawa ng image. Tinatawag ito ng n8n gamit ang repository_dispatch.
+# Kinukuha nito yung design JSON, ginagawang JPEG, tapos kinokomit sa docs/posts/
+# kaya may agad na PUBLIC URL sa GitHub Pages — kailangang-kailangan yun ng
+# Instagram API kasi hindi ito tumatanggap ng file upload, URL lang.
+#
+# Nasa ROOT ng repo yung render.js at template.html — hindi sa loob ng folder.
+name: Render post image
+
+on:
+  repository_dispatch:
+    types: [render-post]
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Filename slug, hal. 2026-08-23'
+        required: true
+      design:
+        description: 'Design JSON (isang linya)'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: render-post
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install deps (kasama na yung Chromium)
+        run: npm ci
+
+      - name: Isulat yung design payload
+        env:
+          DESIGN: ${{ github.event.client_payload.design || inputs.design }}
+        run: |
+          mkdir -p /tmp/render
+          printf '%s' "$DESIGN" > /tmp/render/design.json
+          echo "--- payload ---"
+          cat /tmp/render/design.json
+
+      - name: I-render yung JPEG
+        env:
+          SLUG: ${{ github.event.client_payload.slug || inputs.slug }}
+        run: |
+          # safety check: ligtas na pangalan lang, walang path traversal
+          case "$SLUG" in
+            *[!a-zA-Z0-9._-]* | "" ) echo "::error::Bawal na slug: $SLUG"; exit 1 ;;
+          esac
+          mkdir -p docs/posts
+          node render.js --in /tmp/render/design.json --out "docs/posts/${SLUG}.jpg"
+
+      - name: I-commit at i-publish
+        env:
+          SLUG: ${{ github.event.client_payload.slug || inputs.slug }}
+        run: |
+          git config user.name  "anyaya-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add "docs/posts/${SLUG}.jpg"
+          if git diff --staged --quiet; then
+            echo "Walang pagbabago."
+          else
+            git commit -m "post: render ${SLUG}"
+            git push
+          fi
+
+      - name: Ipakita yung public URL
+        env:
+          SLUG: ${{ github.event.client_payload.slug || inputs.slug }}
+        run: |
+          URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/posts/${SLUG}.jpg"
+          echo "### 🖼️ $URL" >> $GITHUB_STEP_SUMMARY
