@@ -70,9 +70,9 @@ const samples = {
     variant: 'cta',
     eyebrow: 'Bukas na ang booking',
     headline: 'Ipadala mo lang ang *petsa* ng event mo.',
-    body: 'Sasagutin ka namin sa loob ng isang araw, kasama na ang sample ng RSVP site at kraft card.',
+    body: 'Sasagutin ka namin sa loob ng isang araw, kasama na ang sample ng RSVP site at craft card.',
     cta: 'Message us',
-    seal: { top: 'Ready', bottom: 'In days' },
+
   },
 };
 
