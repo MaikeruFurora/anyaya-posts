@@ -1,0 +1,9 @@
+{
+  "variant": "stat",
+  "eyebrow": "Bakit mahalaga ang headcount",
+  "stat": {
+    "value": "1 in 5",
+    "label": "na *na-confirm* na bisita ay hindi dumadalo"
+  },
+  "body": "Kaya ang live na RSVP na may deadline at reminder ay mas mura kaysa sa sobrang pagkain."
+}
