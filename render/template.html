@@ -37,6 +37,17 @@ body{
   text-rendering:geometricPrecision;
 }
 
+/* ---------- papel: iba-ibang kulay kada araw ---------- */
+/* Dati iisang cream lang, kaya anim sa pitong araw ay magkamukha ang
+   background. Tatlong tono na ngayon, at ang token lang ang pinapalitan —
+   kaya sumusunod ang lahat ng gumagamit ng --cream nang hindi nasisira. */
+body[data-paper="kraft"]{ --cream:#ece0cd; --cream-warm:#e4d6bf; --kraft-deep:#7d6242; }
+body[data-paper="chalk"]{ --cream:#eceee6; --cream-warm:#e2e6da; }
+
+/* Mas kitang-kita ang butil ng papel kapag mas madilim ang tono. */
+body[data-paper="kraft"] .canvas::before{ opacity:.09 }
+body[data-paper="chalk"] .canvas::before{ opacity:.05 }
+
 /* ---------- canvas ---------- */
 .canvas{
   position:relative;
@@ -261,6 +272,9 @@ body[data-count="5"] .num{flex-basis:58px;height:58px;font-size:31px}
    VARIANT: feature — product spotlight
    ============================================================ */
 [data-variant="feature"] .canvas{background:linear-gradient(168deg,#5d6b50 0%,#485438 100%)}
+/* Ang feature ay laging madilim, pero hindi laging iisang lalim ng sage. */
+body[data-paper="chalk"][data-variant="feature"] .canvas{background:linear-gradient(168deg,#3c4433 0%,#242a1e 100%)}
+body[data-paper="kraft"][data-variant="feature"] .canvas{background:linear-gradient(168deg,#54604a 0%,#3a4430 100%)}
 [data-variant="feature"] .frame{border-color:rgba(247,243,236,.28)}
 [data-variant="feature"] .frame::before{border-color:rgba(247,243,236,.15)}
 [data-variant="feature"] .eyebrow{color:var(--kraft)}
@@ -331,6 +345,8 @@ const rich = s => esc(s)
 const variant = D.variant || 'quote';
 document.body.dataset.variant = variant;
 document.body.dataset.size = D.size === 'square' ? 'square' : 'portrait';
+const PAPERS = ['cream', 'kraft', 'chalk'];
+document.body.dataset.paper = PAPERS.includes(D.paper) ? D.paper : 'cream';
 
 const foot = `
   <div class="foot">
