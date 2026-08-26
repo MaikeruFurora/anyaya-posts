@@ -1,0 +1,106 @@
+# Ilalabas ang post kapag nag-comment ka ng "post" sa approval issue.
+#
+# Seguridad: ikaw lang — ang may-ari ng repo — ang sinusunod. Publiko ang
+# repo, kaya kahit sino ay makakapag-comment. Sinusuri natin ang username
+# bago gumalaw kahit ano.
+name: Publish post
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: publish-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Tatlong kundisyon, lahat kailangan:
+    #   1. issue ito, hindi pull request
+    #   2. ang nag-comment ay ang may-ari ng repo
+    #   3. approval issue ito, batay sa pamagat
+    if: >
+      !github.event.issue.pull_request &&
+      github.event.comment.user.login == github.repository_owner &&
+      startsWith(github.event.issue.title, 'Post para sa ')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Basahin ang utos
+        id: cmd
+        env:
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          # Unang salita lang ang binabasa, walang case sensitivity.
+          WORD=$(printf '%s' "$BODY" | tr '[:upper:]' '[:lower:]' \
+                 | tr -d '\r' | head -n1 | tr -d '[:space:]')
+          echo "Utos: '$WORD'"
+          case "$WORD" in
+            post|approve|oo|sige) echo "action=post" >> "$GITHUB_OUTPUT" ;;
+            skip|no|huwag|hindi)  echo "action=skip" >> "$GITHUB_OUTPUT" ;;
+            *)                    echo "action=none" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Kunin ang slug sa pamagat
+        if: steps.cmd.outputs.action != 'none'
+        id: slug
+        env:
+          TITLE: ${{ github.event.issue.title }}
+        run: |
+          SLUG=$(printf '%s' "$TITLE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | head -n1)
+          if [ -z "$SLUG" ]; then
+            echo "::error::Walang petsa sa pamagat ng issue."; exit 1
+          fi
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.cmd.outputs.action == 'post'
+
+      - uses: actions/setup-node@v4
+        if: steps.cmd.outputs.action == 'post'
+        with:
+          node-version: '20'
+
+      - name: Ilabas sa Facebook at Instagram
+        if: steps.cmd.outputs.action == 'post'
+        id: pub
+        env:
+          FB_PAGE_TOKEN:  ${{ secrets.FB_PAGE_TOKEN }}
+          FB_PAGE_ID:     ${{ secrets.FB_PAGE_ID }}
+          IG_USER_ID:     ${{ secrets.IG_USER_ID }}
+          FB_API_VERSION: ${{ vars.FB_API_VERSION }}
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO="${{ github.event.repository.name }}"
+          SLUG="${{ steps.slug.outputs.slug }}"
+          IMG="https://$OWNER.github.io/$REPO/posts/$SLUG.jpg"
+
+          if [ ! -f "docs/posts/$SLUG.json" ]; then
+            echo "::error::Wala ang docs/posts/$SLUG.json — hindi mabasa ang caption."
+            exit 1
+          fi
+
+          node bot/publish.js --post "docs/posts/$SLUG.json" --image-url "$IMG"
+
+      - name: Sagutin ang issue
+        if: always() && steps.cmd.outputs.action != 'none'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          if [ "${{ steps.cmd.outputs.action }}" = "skip" ]; then
+            gh issue comment "$NUM" --body "Nilaktawan. Walang ipinost ngayong araw."
+            gh issue close "$NUM" --reason "not planned"
+            exit 0
+          fi
+
+          if [ "${{ steps.pub.outcome }}" = "success" ]; then
+            gh issue comment "$NUM" --body "$(printf 'Nailabas na.\n\n```\n%s\n```' "$(cat /tmp/publish-result.txt 2>/dev/null || echo 'ok')")"
+            gh issue close "$NUM" --reason "completed"
+          else
+            gh issue comment "$NUM" --body "$(printf 'Hindi nailabas.\n\n```\n%s\n```\n\nNaiwang bukas ang issue — mag-comment ulit ng `post` kapag naayos na.' "$(cat /tmp/publish-result.txt 2>/dev/null || echo 'walang detalye')")"
+          fi
