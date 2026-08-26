@@ -26,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       action:    ${{ steps.cmd.outputs.action }}
+      kind:      ${{ steps.cmd.outputs.kind }}
       base:      ${{ steps.cmd.outputs.base }}
       date:      ${{ steps.cmd.outputs.date }}
       variation: ${{ steps.cmd.outputs.variation }}
@@ -112,7 +113,7 @@ jobs:
   # hindi ka makakita ng dalawang bukas na issue para sa parehong araw.
   close-old:
     needs: route
-    if: needs.route.outputs.action == 'regen'
+    if: needs.route.outputs.action == 'regen' && needs.route.outputs.kind == 'daily'
     runs-on: ubuntu-latest
     steps:
       - name: Isara ang luma
@@ -125,10 +126,36 @@ jobs:
 
   regen:
     needs: [route, close-old]
-    if: needs.route.outputs.action == 'regen'
+    if: needs.route.outputs.action == 'regen' && needs.route.outputs.kind == 'daily'
     uses: ./.github/workflows/make-post.yml
     secrets: inherit
     with:
       date:      ${{ needs.route.outputs.date }}
       variation: ${{ fromJSON(needs.route.outputs.variation) }}
       dry:       false
+
+  # Ang showcase ay may larawang ikaw ang pumili. Hindi ito kayang ulitin ng
+  # isang comment — walang paraan para malaman ng workflow kung parehong
+  # larawan pa rin ang gusto mo. Sinasabi na lang natin kung ano ang gagawin.
+  regen-showcase:
+    needs: route
+    if: needs.route.outputs.action == 'regen' && needs.route.outputs.kind == 'showcase'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ituro ang tamang daan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          # Walang heredoc dito: ang laman nito ay dapat naka-indent sa loob
+          # ng YAML block, at kinakain ng heredoc ang indentation.
+          {
+            echo "Totoong gawa ito, kaya hindi ko ito kayang ulitin mula rito — ikaw ang"
+            echo "pumili ng larawan, at hindi ko alam kung iyon pa rin ang gusto mo."
+            echo ""
+            echo "Ganito ang gawin: **Actions → Showcase post → Run workflow**, parehong"
+            echo "\`images\`, tapos taasan ang \`variation\` ng isa. Bagong sulat, parehong larawan."
+            echo ""
+            echo "Naiwang bukas ang issue na ito. Isara mo kapag napalitan na."
+          } > /tmp/reply.md
+          gh issue comment "$NUM" --body-file /tmp/reply.md
