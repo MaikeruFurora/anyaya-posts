@@ -1,0 +1,141 @@
+# Ang paggawa ng isang post, mula sa wala hanggang sa bukas na approval issue.
+#
+# Hiwalay itong file dahil dalawa ang tumatawag: ang alas-sais ng umaga, at
+# ang "skip and generate" kapag ayaw mo sa lumabas. Iisang daan, kaya kung may
+# maayos tayo, sabay itong naaayos sa dalawa.
+name: Make post
+
+on:
+  workflow_call:
+    inputs:
+      date:
+        description: 'YYYY-MM-DD. Iwan kung ngayon.'
+        type: string
+        required: false
+      variation:
+        description: 'Pang-ilang ulit. 0 = ang una.'
+        type: number
+        required: false
+        default: 0
+      dry:
+        description: 'Huwag tawagan ang Gemini'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: render/package-lock.json
+
+      # Nagda-download ang Puppeteer ng sariling Chrome (~150 MB). Ini-imbak
+      # natin ito para hindi ito ulitin araw-araw — at para hindi tayo
+      # nakasalalay sa isang download tuwing umaga.
+      - name: Kunin ang naka-imbak na Chrome
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: puppeteer-${{ runner.os }}-${{ hashFiles('render/package-lock.json') }}
+
+      - name: I-install ang renderer
+        working-directory: render
+        run: npm ci
+
+      - name: Isulat ang post
+        id: gen
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL:   ${{ vars.GEMINI_MODEL }}
+        run: |
+          ARGS="--out-dir /tmp/post --variation ${{ inputs.variation }}"
+          [ -n "${{ inputs.date }}" ] && ARGS="$ARGS --date ${{ inputs.date }}"
+          [ "${{ inputs.dry }}" = "true" ] && ARGS="$ARGS --dry"
+          node bot/generate.js $ARGS
+          echo "base=$(node -p "require('/tmp/post/post.json').base")" >> "$GITHUB_OUTPUT"
+          echo "slug=$(node -p "require('/tmp/post/post.json').slug")" >> "$GITHUB_OUTPUT"
+
+      - name: Gawing larawan
+        run: |
+          mkdir -p docs/posts
+          node render/render.js \
+            --in /tmp/post/design.json \
+            --out "docs/posts/${{ steps.gen.outputs.base }}.jpg"
+
+      - name: I-commit ang larawan at ang caption
+        run: |
+          # Kasama ang post.json: ito ang babasahin kapag nag-approve ka.
+          # Walang database — ang repo mismo ang tala.
+          cp /tmp/post/post.json "docs/posts/${{ steps.gen.outputs.base }}.json"
+
+          git config user.name  'anyaya-bot'
+          git config user.email 'anyaya-bot@users.noreply.github.com'
+          git add "docs/posts/${{ steps.gen.outputs.base }}.jpg" \
+                  "docs/posts/${{ steps.gen.outputs.base }}.json"
+          git commit -m "Post para sa ${{ steps.gen.outputs.base }}" || {
+            echo "Walang pagbabago."; exit 0; }
+
+          # Baka may ibang commit na dumating habang nagre-render tayo.
+          for i in 1 2 3; do
+            git push && break
+            echo "Push failed, rebasing…"; git pull --rebase; sleep 5
+          done
+
+      - name: Hintayin ang GitHub Pages
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO="${{ github.event.repository.name }}"
+          URL="https://$OWNER.github.io/$REPO/posts/${{ steps.gen.outputs.base }}.jpg"
+          echo "image_url=$URL" >> "$GITHUB_ENV"
+
+          # Kailangang publiko na ang larawan bago tayo magbukas ng issue —
+          # kukunin ito ng Instagram sa URL, hindi tayo makakapag-upload ng file.
+          for i in $(seq 1 20); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$URL" || echo "000")
+            echo "Pages check $i: HTTP $CODE"
+            [ "$CODE" = "200" ] && exit 0
+            sleep 20
+          done
+          echo "::error::Hindi pa lumalabas ang larawan sa GitHub Pages pagkatapos ng ~7 minuto."
+          echo "Tingnan kung naka-on ang Pages: Settings → Pages → Source: main, folder /docs"
+          exit 1
+
+      - name: Buksan ang approval issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node bot/issue-body.js \
+            --post /tmp/post/post.json \
+            --image-url "$image_url" > /tmp/issue.md
+
+          # Ang pamagat ang nagdadala ng pangalan ng file. Ito ang binabasa ng
+          # publish workflow — walang ibang tala na kailangang panatilihin.
+          TITLE="Post para sa ${{ steps.gen.outputs.base }} — approve?"
+
+          gh label create "pending-approval" --color "d4a373" \
+            --description "Naghihintay ng sagot mo" 2>/dev/null || true
+
+          URL=$(gh issue create \
+            --title "$TITLE" \
+            --body-file /tmp/issue.md \
+            --label "pending-approval" \
+            --assignee "${{ github.repository_owner }}")
+
+          {
+            echo "### ✅ Handa na ang post"
+            echo ""
+            echo "$URL"
+            echo ""
+            echo "Mag-comment ng \`post\`, \`skip and generate\`, o \`skip\`."
+          } >> "$GITHUB_STEP_SUMMARY"
