@@ -82,6 +82,36 @@ check('slug format YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(at('2026-08-23T06:00:
   check('pick: pareho ang sagot sa buong araw', a.angle === b.angle && a.paper === b.paper);
 }
 
+/* ---------- 1b. variation: ang "skip and generate" ---------- */
+{
+  const day = '2026-08-27T06:00:00+08:00';
+  const v0 = pick(new Date(day), 0);
+  const v1 = pick(new Date(day), 1);
+  const v2 = pick(new Date(day), 2);
+
+  check('variation 0 = walang pagbabago', v0.base === v0.slug && v0.variation === 0, v0.base);
+  check('variation: ibang pangalan ng file', v1.base === v0.slug + '-v2' && v2.base === v0.slug + '-v3',
+        `${v1.base}, ${v2.base}`);
+  check('variation: ibang angle', v1.angle !== v0.angle && v2.angle !== v0.angle && v2.angle !== v1.angle);
+  check('variation: ibang papel', v1.paper !== v0.paper && v2.paper !== v0.paper);
+  check('variation: ibang hugis ng caption', v1.shape !== v0.shape && v2.shape !== v0.shape);
+  check('variation: ibang disenyo sa bawat ulit',
+        new Set([v0.variant, v1.variant, v2.variant]).size === 3,
+        `${v0.variant}, ${v1.variant}, ${v2.variant}`);
+  check('variation: parehong pillar pa rin', v1.pillar === v0.pillar && v1.subject === v0.subject,
+        'ang layunin ng araw ay hindi nagbabago');
+
+  // Kahit anong araw, kahit anong ulit — dapat laging may lumalabas na angle.
+  let bad = 0;
+  for (let d = 0; d < 60; d++) {
+    for (let v = 0; v < 6; v++) {
+      const r = pick(new Date(Date.UTC(2026, 7, 1 + d, 6, 0, 0)), v);
+      if (!r.angle || !r.variant || !r.paper || !r.base) bad++;
+    }
+  }
+  check('variation: 360 na kombinasyon, walang butas', bad === 0, `${bad} sira`);
+}
+
 /* ---------- 2. ang request sa Gemini ---------- */
 {
   const p = at('2026-08-24T06:00:00+08:00');

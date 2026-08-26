@@ -25,7 +25,7 @@ ${quoted}
 
 | | |
 |---|---|
-| **Araw** | ${post.slug} |
+| **Araw** | ${post.slug}${post.variation ? ` — ulit #${post.variation + 1}` : ''} |
 | **Serbisyo** | ${SERBISYO[post.subject] || post.subject} |
 | **Pillar** | ${post.pillar} |
 | **Angle** | ${post.angle} |
@@ -36,10 +36,13 @@ ${quoted}
 
 ### Ano ang gagawin mo
 
-Mag-comment ng isang salita sa ibaba:
+Mag-comment ng isa sa mga ito:
 
-- **\`post\`** — ilalabas ito sa Facebook at Instagram
-- **\`skip\`** — laktawan ang araw na ito
+| I-comment | Mangyayari |
+|---|---|
+| \`post\` | Ilalabas sa Facebook at Instagram |
+| \`skip and generate\` | Gagawa ng **bagong** post ngayong araw — ibang angle, ibang disenyo, ibang papel |
+| \`skip\` | Laktawan ang araw na ito |
 
 Kung wala kang gagawin, mananatili itong bukas at walang mapo-post.
 

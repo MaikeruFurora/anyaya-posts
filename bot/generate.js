@@ -3,7 +3,7 @@
  * Isang araw na post: pumili ng laman, ipasulat sa Gemini, salain, at
  * ihanda ang design JSON para sa renderer.
  *
- *   node bot/generate.js --out-dir /tmp/post [--date 2026-08-26] [--dry]
+ *   node bot/generate.js --out-dir /tmp/post [--date 2026-08-26] [--variation 1] [--dry]
  *
  * Sumusulat ng dalawang file sa --out-dir:
  *   design.json  → ipapakain sa render/render.js
@@ -102,12 +102,14 @@ const dryFor = variant => ({
   const dateArg = arg('--date');
   const when = dateArg ? new Date(dateArg + 'T06:00:00+08:00') : new Date();
 
-  const ctx = pick(when);
+  const variation = parseInt(arg('--variation', '0'), 10) || 0;
+  const ctx = pick(when, variation);
   console.log(`Araw    : ${ctx.slug}`);
   console.log(`Pillar  : ${ctx.pillar}`);
   console.log(`Serbisyo: ${ctx.subject}`);
   console.log(`Angle   : ${ctx.angle}`);
   console.log(`Variant : ${ctx.variant}   Papel: ${ctx.paper}   Hugis: ${ctx.shape}`);
+  if (ctx.variation) console.log(`Ulit    : #${ctx.variation + 1} — file ${ctx.base}`);
 
   let g;
   if (has('--dry')) {

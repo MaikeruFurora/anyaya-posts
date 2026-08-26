@@ -279,6 +279,7 @@ const ANGLES = {
 /* Pumili ng laman para sa isang araw                                   */
 /* ------------------------------------------------------------------ */
 
+const ALL_VARIANTS = ['quote', 'tips', 'stat', 'compare', 'question', 'feature', 'cta'];
 const SHAPES = ['cold_open', 'one_breath', 'three_beats', 'plain_answer', 'noticing'];
 const PAPERS = ['cream', 'kraft', 'chalk'];
 const TZ = 'Asia/Manila';
@@ -287,7 +288,7 @@ const TZ = 'Asia/Manila';
  * Deterministic — pareho ang lalabas sa parehong petsa, saanman patakbuhin.
  * Iyon ang dahilan kung bakit kayang subukan ito nang walang AI.
  */
-function pick(when = new Date()) {
+function pick(when = new Date(), variation = 0) {
   const now = new Date(when.toLocaleString('en-US', { timeZone: TZ }));
   const dow = now.getDay();                       // 0 = Linggo
   const start = new Date(now.getFullYear(), 0, 1);
@@ -305,19 +306,38 @@ function pick(when = new Date()) {
   // Kada ikalawang linggo lumalabas ang parehong pares na (pillar, subject).
   // Ang slot ang pumipigil sa Martes at Sabado na magkapareho ng angle.
   const idx = Math.floor(week / 2) * pillar.perWeek + pillar.slot;
-  const angle = pool[idx % pool.length];
 
+  // `variation` ay para sa "skip and generate". Zero ang normal na araw.
+  // Inuusog nito ang angle, ang disenyo, ang hugis, at ang papel — kaya
+  // tunay na ibang post ang lalabas, hindi lang ibang pagkakasulat ng
+  // parehong bagay. Ang pillar ang natitira: iyon ang layunin ng araw.
+  const v = Math.max(0, Math.floor(variation) || 0);
+
+  const angle = pool[(idx + v) % pool.length];
+
+  // Ang normal na araw ay sumusunod sa disenyong itinakda para sa pillar.
+  // Ang pang-ulit ay lumalabas doon at kumukuha sa buong pitong disenyo —
+  // kung hindi, dalawa lang ang paikot-ikot at pareho ang itsura ng v1 at v3.
   const occurrence = week * pillar.perWeek + pillar.slot;
-  const variant = pillar.variants[occurrence % pillar.variants.length];
+  const first = pillar.variants[occurrence % pillar.variants.length];
+  const variant = v === 0
+    ? first
+    : ALL_VARIANTS[(ALL_VARIANTS.indexOf(first) + v) % ALL_VARIANTS.length];
 
   // Umiikot nang hiwalay sa isa't isa: 7 araw x 5 hugis x 3 papel x 2 serbisyo.
-  const shape = SHAPES[dayOfYear % SHAPES.length];
-  const paper = PAPERS[dayOfYear % PAPERS.length];
+  const shape = SHAPES[(dayOfYear + v) % SHAPES.length];
+  const paper = PAPERS[(dayOfYear + v) % PAPERS.length];
 
   const pad = n => String(n).padStart(2, '0');
   const slug = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 
-  return { pillar: pillar.name, subject, angle, variant, shape, paper, slug, week, dow, dayOfYear };
+  // Ang base ay ang pangalan ng file. Ang unang subok ay ang petsa lang;
+  // ang pang-ulit ay may -v2, -v3 — para hindi mabura ang naunang larawan
+  // at manatiling tama ang mga lumang issue.
+  const base = v === 0 ? slug : `${slug}-v${v + 1}`;
+
+  return { pillar: pillar.name, subject, angle, variant, shape, paper,
+           slug, base, variation: v, week, dow, dayOfYear };
 }
 
 /* ------------------------------------------------------------------ */
@@ -366,4 +386,4 @@ function geminiBody(p) {
   };
 }
 
-module.exports = { SYSTEM_PROMPT, PILLARS, ANGLES, SHAPES, PAPERS, pick, geminiBody };
+module.exports = { SYSTEM_PROMPT, PILLARS, ANGLES, ALL_VARIANTS, SHAPES, PAPERS, pick, geminiBody };

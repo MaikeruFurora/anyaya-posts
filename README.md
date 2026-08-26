@@ -20,10 +20,23 @@ Walang server. Walang database. Walang bayad.
             ↓
           GitHub Issue — may larawan at caption, naka-assign sa iyo
             ↓ mag-e-email sa iyo ang GitHub
-          Nag-comment ka ng "post"
+          Nag-comment ka ng "post", "skip and generate", o "skip"
             ↓
           "Publish post" — Facebook + Instagram
 ```
+
+## Ang tatlong sagot mo
+
+| I-comment | Mangyayari |
+|---|---|
+| `post` | Ilalabas sa Facebook at Instagram, tapos isasara ang issue. |
+| `skip and generate` | Isasara ang luma at gagawa ng **bago** ngayong araw — ibang angle, ibang disenyo, ibang papel. Parehong pillar pa rin. |
+| `skip` | Laktawan ang araw. |
+
+Tinatanggap din: `approve`, `oo`, `sige` · `ulit`, `iba naman`, `generate` ·
+`huwag`, `hindi`, `no`. Hindi mahalaga ang laki ng letra.
+
+Ang pang-ulit ay nagiging `2026-08-27-v2.jpg` — hindi nabubura ang nauna.
 
 Wala ni isang hakbang na nangangailangan ng serverong gising.
 
@@ -33,8 +46,9 @@ Wala ni isang hakbang na nangangailangan ng serverong gising.
 
 ```
 .github/workflows/
-  daily-post.yml     ← 6 AM. Sumusulat, nagre-render, nagbubukas ng issue.
-  publish-post.yml   ← Tumatakbo kapag nag-comment ka. Nagpo-post.
+  daily-post.yml     ← 6 AM. Ang orasan lang.
+  make-post.yml      ← Ang totoong paggawa. Ginagamit ng dalawa.
+  publish-post.yml   ← Ang sagot mo: post / skip and generate / skip.
 
 bot/
   content.js         ← 6 pillars, 121 angles, ang system prompt. DITO mag-edit.
@@ -42,6 +56,8 @@ bot/
   generate.js        ← pick → Gemini → validate → design.json
   publish.js         ← Facebook at Instagram
   issue-body.js      ← ang itsura ng approval issue
+  route.sh          ← binabasa ang comment mo: post / skip and generate / skip
+  route.test.sh     ← 26 na kaso para diyan
   test.js            ← lahat, nasusubok nang walang AI at walang internet
 
 render/
@@ -103,10 +119,11 @@ Kapag ayos na, patakbuhin ulit nang walang `dry`.
 
 ```bash
 cd render && npm ci && cd ..
-node bot/test.js
+node bot/test.js        # 41 na test
+./bot/route.test.sh     # 26 na kaso ng utos
 ```
 
-35 na test. Dapat lahat ✓ bago mag-push.
+Dapat lahat ✓ bago mag-push.
 
 ---
 
