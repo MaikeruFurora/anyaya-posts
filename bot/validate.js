@@ -66,6 +66,28 @@ function validate(g, ctx) {
   }
   if (g.variant === 'cta') design.cta = g.ctaLabel;
 
+  if (g.variant === 'showcase') {
+    // Ang larawan ay galing sa iyo, hindi sa AI. Kung wala ito, walang post —
+    // mas mabuti nang huminto kaysa gumawa ng showcase na walang ipinapakita.
+    if (!ctx.imageFile) throw new Error('Walang larawan para sa showcase post.');
+    design.imageFile = ctx.imageFile;
+
+    // Screen o papel? Magkaibang kahon ang kailangan. Kung wala nito,
+    // napupunta ang isang naka-imprentang invitation sa loob ng telepono.
+    const FRAMES = ['phone', 'card', 'grid'];
+    const frame = ctx.frame || 'phone';
+    if (!FRAMES.includes(frame)) {
+      throw new Error(`Hindi kilalang frame: ${frame} (${FRAMES.join(', ')} lang)`);
+    }
+    design.frame = frame;
+    design.items = (g.items || []).slice(0, 3);
+    if (design.items.length < 2) {
+      throw new Error(`Kailangan ng 2-3 label sa showcase (mayroong ${design.items.length})`);
+    }
+    const tooLong = design.items.find(t => t.length > 22);
+    if (tooLong) throw new Error(`Sobrang haba ng label: "${tooLong}"`);
+  }
+
   const tags = (g.hashtags || []).map(t => (t.startsWith('#') ? t : '#' + t));
   if (!tags.some(t => t.toLowerCase() === '#anyayadesigns')) tags.push('#AnyayaDesigns');
 

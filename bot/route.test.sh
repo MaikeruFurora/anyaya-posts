@@ -36,5 +36,15 @@ f date      "2026-08-27"    "Post para sa 2026-08-27-v2 — approve?"
 f variation "2"             "Post para sa 2026-08-27-v2 — approve?"
 f variation "5"             "Post para sa 2026-08-27-v5 — approve?"
 
+# Ang showcase ay may sariling pangalan at hindi dapat malito sa araw-araw.
+f kind      "daily"                 "Post para sa 2026-08-27 — approve?"
+f kind      "daily"                 "Post para sa 2026-08-27-v3 — approve?"
+f kind      "showcase"              "Post para sa 2026-08-27-showcase — approve?"
+f kind      "showcase"              "Post para sa 2026-08-27-showcase-v2 — approve?"
+f base      "2026-08-27-showcase"   "Post para sa 2026-08-27-showcase — approve?"
+f base      "2026-08-27-showcase-v2" "Post para sa 2026-08-27-showcase-v2 — approve?"
+f date      "2026-08-27"            "Post para sa 2026-08-27-showcase-v2 — approve?"
+f variation "2"                     "Post para sa 2026-08-27-showcase-v2 — approve?"
+
 [ "$fail" = 0 ] && echo && echo "🎉 Lahat pumasa." || { echo; echo "⚠️  $fail na bumagsak."; }
 exit "$fail"

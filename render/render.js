@@ -29,7 +29,38 @@ const readStdin = () => new Promise(res => {
 });
 
 // ---------- validation ----------
-const VARIANTS = ['quote', 'tips', 'stat', 'compare', 'question', 'feature', 'cta'];
+const VARIANTS = ['quote', 'tips', 'stat', 'compare', 'question', 'feature', 'cta', 'showcase'];
+
+// Mga larawang kayang ipasok sa showcase. Base64 ang ginagamit para walang
+// network call sa oras ng render — kung sa internet kukunin, may araw na
+// mabibigo iyon at tahimik na mawawala ang larawan sa post mo.
+const MIME = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
+
+function toDataUri(file) {
+  const ext = path.extname(file).toLowerCase();
+  if (!MIME[ext]) throw new Error(`Hindi kilalang uri ng larawan: ${ext} (png, jpg, o webp lang)`);
+  const abs = path.resolve(file);
+  if (!fs.existsSync(abs)) throw new Error(`Wala ang larawan: ${abs}`);
+  const bytes = fs.readFileSync(abs);
+  if (bytes.length > 8 * 1024 * 1024) {
+    throw new Error(`Sobrang laki ng larawan (${(bytes.length / 1048576).toFixed(1)} MB, max 8 MB)`);
+  }
+  return `data:${MIME[ext]};base64,${bytes.toString('base64')}`;
+}
+
+function inlineImage(d) {
+  // Isa o marami. Ang una sa listahan ang mapupunta sa gitna — iyon ang
+  // dapat na pinakamalakas na larawan.
+  if (Array.isArray(d.imageFiles) && d.imageFiles.length) {
+    const max = d.frame === 'grid' ? 9 : 3;
+    if (d.imageFiles.length > max) {
+      throw new Error(`${max} na larawan lang ang kasya sa frame na "${d.frame || 'phone'}" (${d.imageFiles.length} ang binigay)`);
+    }
+    d.images = d.imageFiles.map(toDataUri);
+    return;
+  }
+  if (d.imageFile) d.image = toDataUri(d.imageFile);
+}
 
 function validate(d) {
   const errors = [];
@@ -38,6 +69,27 @@ function validate(d) {
   }
   if (['quote', 'tips', 'compare', 'question', 'feature', 'cta'].includes(d.variant) && !d.headline) {
     errors.push('headline is required for this variant');
+  }
+  if (d.frame && !['phone', 'card', 'grid', 'plain'].includes(d.frame)) {
+    errors.push(`frame ay "phone", "card", "grid", o "plain" lang (nakuha: "${d.frame}")`);
+  }
+  if (d.blurBelow !== undefined) {
+    // Isang numero, o listahan na tig-isa sa bawat larawan. Ang 0 ay walang blur.
+    const list = Array.isArray(d.blurBelow) ? d.blurBelow : [d.blurBelow];
+    for (const v of list) {
+      const n = Number(v);
+      if (Number.isNaN(n) || (n !== 0 && !(n >= 5 && n <= 95))) {
+        errors.push(`blurBelow ay 0 o 5-95 (nakuha: "${v}")`);
+        break;
+      }
+    }
+  }
+  if (d.frame === 'grid' && (d.imageFiles || d.images || []).length > 9) {
+    errors.push('siyam na larawan lang ang kasya sa grid');
+  }
+  if (d.variant === 'showcase' &&
+      !d.image && !d.imageFile && !(d.images || []).length && !(d.imageFiles || []).length) {
+    errors.push('kailangan ng larawan ang showcase (imageFile o imageFiles)');
   }
   if (['tips', 'feature'].includes(d.variant)) {
     const n = (d.items || []).length;
@@ -62,6 +114,9 @@ function validate(d) {
 (async () => {
   const raw  = inFile ? fs.readFileSync(inFile, 'utf8') : await readStdin();
   const data = JSON.parse(raw);
+
+  // Bago pa ang validation: kapag may imageFile, gawin itong base64 image.
+  inlineImage(data);
 
   const errors = validate(data);
   if (errors.length) {

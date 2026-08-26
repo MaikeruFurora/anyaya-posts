@@ -95,6 +95,10 @@ DESIGN VARIANTS — use the ONE you are given
 - question : a question to the audience. Needs headline (short, max 60), body.
 - feature  : product spotlight on a dark sage background. Needs headline, items (3-4).
 - cta      : an invitation to book. Needs headline, body, ctaLabel (max 18 chars).
+- showcase : real work, built around a real photo or screenshot. Needs headline
+             (max 55 chars), body (max 110), and items (exactly 3 labels of
+             1-3 words each, e.g. "Live count", "Venue map"). The picture is
+             the proof; the words only frame it. Never describe the picture.
 
 MARKUP IN DESIGN TEXT
 In headline and items you may wrap *one phrase* in asterisks for italic accent
@@ -386,4 +390,56 @@ function geminiBody(p) {
   };
 }
 
-module.exports = { SYSTEM_PROMPT, PILLARS, ANGLES, ALL_VARIANTS, SHAPES, PAPERS, pick, geminiBody };
+/* ------------------------------------------------------------------ */
+/* Showcase: totoong gawa, hindi imbento                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Hindi ito bahagi ng araw-araw na ikot. Walang AI na makakaimbento ng
+ * totoong trabaho — ikaw ang nagbibigay ng larawan at ng maikling kuwento,
+ * at ang AI ang bahalang sumulat sa paligid nito.
+ *
+ * @param {string} brief   ano ang nasa larawan, sa sarili mong salita
+ * @param {number} variation  0 = una. Taasan kung ayaw mo sa pagkakasulat.
+ */
+function showcaseBody(brief, variation = 0) {
+  const nudge = variation > 0
+    ? '\n\nThis is rewrite number ' + (variation + 1) + '. Take a different ' +
+      'angle from the obvious one. Do not repeat the shape of a previous attempt.'
+    : '';
+
+  return {
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ role: 'user', parts: [{ text:
+      'Content pillar for today: Product Showcase — REAL CLIENT WORK.\n' +
+      'Design variant to use: showcase\n' +
+      'Caption shape to use: noticing\n\n' +
+      'What is in the picture, from the person who made it:\n' + brief + '\n\n' +
+      'Write one post about this actual piece of work. Two rules that matter ' +
+      'more than the rest:\n' +
+      '1. Do NOT describe the picture. The reader can see it. Say what it ' +
+      'does for the people using it.\n' +
+      '2. Do NOT invent details that are not in the brief above — no prices, ' +
+      'no guest counts, no dates, no client quotes. If the brief does not say ' +
+      'it, it does not go in.' + nudge }] }],
+    generationConfig: {
+      temperature: 1.0,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'OBJECT',
+        properties: {
+          variant:  { type: 'STRING' },
+          eyebrow:  { type: 'STRING' },
+          headline: { type: 'STRING' },
+          body:     { type: 'STRING' },
+          items:    { type: 'ARRAY', items: { type: 'STRING' } },
+          caption:  { type: 'STRING' },
+          hashtags: { type: 'ARRAY', items: { type: 'STRING' } },
+        },
+        required: ['headline', 'body', 'items', 'caption', 'hashtags'],
+      },
+    },
+  };
+}
+
+module.exports = { SYSTEM_PROMPT, PILLARS, ANGLES, ALL_VARIANTS, SHAPES, PAPERS, pick, geminiBody, showcaseBody };

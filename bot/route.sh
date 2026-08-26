@@ -31,13 +31,22 @@ case "$WORD" in
 esac
 
 # Ang pamagat ang may dala ng pangalan ng file:
-#   "Post para sa 2026-08-27 — approve?"    → base 2026-08-27
-#   "Post para sa 2026-08-27-v2 — approve?" → base 2026-08-27-v2
-BASE=$(printf '%s' "$TITLE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}(-v[0-9]+)?' | head -n1)
+#   "Post para sa 2026-08-27 — approve?"             → araw-araw
+#   "Post para sa 2026-08-27-v2 — approve?"          → araw-araw, ikalawang ulit
+#   "Post para sa 2026-08-27-showcase — approve?"    → totoong gawa
+#   "Post para sa 2026-08-27-showcase-v2 — approve?" → totoong gawa, ulit
+BASE=$(printf '%s' "$TITLE" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}(-showcase)?(-v[0-9]+)?' | head -n1)
 DATE=$(printf '%s' "$BASE" | cut -c1-10)
+
+# Magkaibang bagay ang uulitin: ang araw-araw ay may sariling angle bank,
+# ang showcase ay may larawang ikaw ang pumili. Hindi sila mapapalitan.
+case "$BASE" in
+  *-showcase|*-showcase-v*) KIND=showcase ;;
+  *)                        KIND=daily ;;
+esac
 
 # Ang v2 ay variation 1. Ang susunod na ulit ay isa pa sa taas.
 N=$(printf '%s' "$BASE" | grep -oE 'v[0-9]+$' | tr -d 'v')
 [ -z "$N" ] && N=1
 
-printf 'action=%s\nbase=%s\ndate=%s\nvariation=%s\n' "$ACTION" "$BASE" "$DATE" "$N"
+printf 'action=%s\nkind=%s\nbase=%s\ndate=%s\nvariation=%s\n' "$ACTION" "$KIND" "$BASE" "$DATE" "$N"

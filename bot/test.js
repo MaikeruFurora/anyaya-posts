@@ -177,6 +177,63 @@ for (const [label, patch] of mustFail) {
   check(`guardrail humuli ng ${label}`, threw, threw ? '' : 'HINDI NAHULI');
 }
 
+/* ---------- 3b. showcase: totoong gawa ---------- */
+{
+  const { showcaseBody } = require('./content');
+  const b = showcaseBody('Live RSVP site for a September wedding in Baao.', 0);
+  check('showcase: may system_instruction',
+        b.system_instruction.parts[0].text.includes('ANYAYA DESIGNS'));
+  check('showcase: nasa prompt ang brief',
+        b.contents[0].parts[0].text.includes('September wedding in Baao'));
+  check('showcase: ipinagbabawal ang pag-imbento',
+        /Do NOT invent details/.test(b.contents[0].parts[0].text));
+  const b2 = showcaseBody('x'.repeat(40), 2);
+  check('showcase: iba ang tagubilin sa pang-ulit',
+        /rewrite number 3/.test(b2.contents[0].parts[0].text));
+
+  const g = {
+    variant: 'showcase', eyebrow: 'Recent work',
+    headline: 'Where the **story** goes',
+    body: 'How they met, in their own words.',
+    items: ['Their own words', 'Photos', 'One scroll'],
+    caption: goodEnglish, hashtags: ['#a'],
+  };
+  const sc = { paper: 'kraft', imageFile: 'assets/showcase/x.png' };
+  try {
+    const out = validate(g, sc);
+    check('showcase: naipasa ang larawan sa design', out.design.imageFile === sc.imageFile);
+    check('showcase: tatlong label', out.design.items.length === 3);
+  } catch (e) {
+    check('showcase: pumasa ang malinis na post', false, e.message);
+  }
+
+  for (const [label, patch, ctx] of [
+    ['walang larawan',   {}, { paper: 'cream' }],
+    ['isang label lang', { items: ['Solo'] }, sc],
+    ['sobrang haba ng label', { items: ['Everything a guest could possibly need', 'B', 'C'] }, sc],
+  ]) {
+    let threw = false;
+    try { validate({ ...g, ...patch }, ctx); } catch { threw = true; }
+    check(`showcase: sumisigaw kapag ${label}`, threw);
+  }
+}
+
+/* ---------- 3c. frame at blur ---------- */
+{
+  const cap = Array(80).fill('word').join(' ') + '.';
+  const g = { variant: 'showcase', headline: 'x', body: 'y',
+              items: ['a', 'b', 'c'], caption: cap, hashtags: ['#a'] };
+  const base = { paper: 'cream', imageFile: 'a.png' };
+
+  for (const [f, want] of [['phone','phone'], ['card','card'], ['grid','grid'], [undefined,'phone']]) {
+    check(`frame: ${f || '(wala)'} → ${want}`,
+          validate({ ...g }, { ...base, frame: f }).design.frame === want);
+  }
+  let threw = false;
+  try { validate({ ...g }, { ...base, frame: 'poster' }); } catch { threw = true; }
+  check('frame: sumisigaw sa hindi kilala', threw);
+}
+
 /* ---------- 4. end-to-end: lahat ng variant, lahat ng papel ---------- */
 const SHAPES = {
   quote:   { variant:'quote', headline:'One strong *statement* here', body:'A short line underneath.' },
@@ -189,6 +246,12 @@ const SHAPES = {
 };
 // Linisin muna. Kung may naiwang lumang JPEG, mabibilang iyon at magmumukhang
 // pumasa ang test kahit walang na-render — nangyari nga iyon noong Agosto 26.
+// Ang showcase ay nangangailangan ng totoong larawan, kaya gumagawa tayo ng
+// isang maliit na PNG sa pamamagitan ng renderer mismo — walang ibang kailangan.
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64');
+
 const outDir = '/tmp/gh-test';
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
@@ -219,6 +282,48 @@ if (!hasRenderer) {
   }
     const made = fs.readdirSync(outDir).filter(f => f.endsWith('.jpg')).length;
   check('render: 21 larawan (7 variant x 3 papel)', made === 21, `${made} nagawa`);
+
+  // Ang showcase: lahat ng frame, may blur at wala.
+  const tiny = path.join(outDir, 'tiny.png');
+  fs.writeFileSync(tiny, TINY_PNG);
+  const scCases = [
+    ['phone-isa',   { frame: 'phone', imageFile: tiny }],
+    ['card-isa',    { frame: 'card',  imageFile: tiny }],
+    ['card-tatlo',  { frame: 'card',  imageFiles: [tiny, tiny, tiny] }],
+    ['grid-walo',   { frame: 'grid',  imageFiles: Array(8).fill(tiny) }],
+    ['blur-listahan', { frame: 'grid', imageFiles: [tiny, tiny], blurBelow: [0, 30] }],
+    ['blur-isa',    { frame: 'card',  imageFile: tiny, blurBelow: 25 }],
+  ];
+  for (const [name, extra] of scCases) {
+    try {
+      const d = { variant: 'showcase', size: 'portrait', paper: 'kraft',
+                  eyebrow: 'Recent work', headline: 'A **real** piece of work',
+                  body: 'Short line underneath.', items: ['One', 'Two', 'Three'], ...extra };
+      const f = path.join(outDir, `sc-${name}.json`);
+      fs.writeFileSync(f, JSON.stringify(d));
+      execFileSync('node', [renderer, '--in', f, '--out', path.join(outDir, `sc-${name}.jpg`)],
+                   { stdio: 'pipe' });
+      check(`showcase render: ${name}`, true);
+    } catch (e) {
+      check(`showcase render: ${name}`, false, String(e.message).slice(0, 140));
+    }
+  }
+
+  // Dapat tumanggi ang renderer sa maling laman.
+  for (const [name, d] of [
+    ['walang larawan', { variant: 'showcase', headline: 'x' }],
+    ['maling frame',   { variant: 'showcase', headline: 'x', imageFile: tiny, frame: 'poster' }],
+    ['maling blur',    { variant: 'showcase', headline: 'x', imageFile: tiny, blurBelow: 200 }],
+    ['sampung larawan', { variant: 'showcase', headline: 'x', frame: 'grid',
+                          imageFiles: Array(10).fill(tiny) }],
+  ]) {
+    const f = path.join(outDir, `bad-${name.replace(/\s/g, '-')}.json`);
+    fs.writeFileSync(f, JSON.stringify({ size: 'portrait', ...d }));
+    let rejected = false;
+    try { execFileSync('node', [renderer, '--in', f, '--out', '/tmp/should-not-exist.jpg'], { stdio: 'pipe' }); }
+    catch { rejected = true; }
+    check(`renderer tinatanggihan ang ${name}`, rejected);
+  }
 }
 
 console.log(fail === 0 ? '\n🎉 Lahat pumasa.' : `\n⚠️  ${fail} na bumagsak.`);

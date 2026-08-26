@@ -271,6 +271,166 @@ body[data-count="5"] .num{flex-basis:58px;height:58px;font-size:31px}
 /* ============================================================
    VARIANT: feature — product spotlight
    ============================================================ */
+
+/* ---------- showcase: totoong gawa, hindi teksto ---------- */
+/* Ito ang variant na may hawak na larawan — screenshot ng isang RSVP site,
+   o litrato ng isang naka-imprentang card. Ang larawan ang bida; ang teksto
+   ay nagbibigay lang ng konteksto. */
+[data-variant="showcase"] .stack{text-align:center}
+[data-variant="showcase"] .mid{align-items:center;justify-content:center}
+[data-variant="showcase"] .eyebrow{justify-content:center}
+[data-variant="showcase"] .eyebrow::after{display:none}
+[data-variant="showcase"] h1{
+  font-size:54px; margin:22px 0 4px; max-width:90%; line-height:1.1;
+}
+[data-variant="showcase"] .body{
+  text-align:center; max-width:78%; font-size:27px; margin-bottom:30px;
+}
+/* Ang proporsyon ay proporsyon ng totoong telepono (halos 1:2). Kung
+   masyadong malapad, tablet ang dating at nawawala ang punto — na sa
+   telepono ito bubuksan ng bisita. */
+.device{
+  width:330px; flex:0 0 auto; margin:0 auto; position:relative;
+  border-radius:36px; padding:10px;
+  background:linear-gradient(160deg,#2f3529,#1d2119);
+  box-shadow:0 26px 58px rgba(45,40,30,.20), 0 3px 10px rgba(45,40,30,.13);
+}
+.device::after{
+  content:''; position:absolute; left:50%; top:19px; transform:translateX(-50%);
+  width:84px; height:5px; border-radius:99px; background:rgba(247,243,236,.30);
+  z-index:2;
+}
+.device .screen{
+  border-radius:27px; overflow:hidden; background:#fff;
+  height:618px; display:block; position:relative;
+}
+/* Malinis na putol sa ibaba. Kung wala ito, natatapyas ang teksto sa gitna
+   ng salita at mukhang aksidente — hindi sinadya. */
+.device .screen::after{
+  content:''; position:absolute; left:0; right:0; bottom:0; height:74px;
+  background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.92));
+}
+.device .screen img{
+  width:100%; height:100%; display:block;
+  object-fit:cover; object-position:top center;
+}
+/* ---------- card: naka-imprentang papel, hindi screen ---------- */
+/* Ang isang invitation ay hindi nakaupo sa loob ng telepono. Walang bezel,
+   walang notch — papel lang na may anino, na parang nakapatong sa mesa. */
+.card{
+  flex:0 0 auto; margin:0 auto; position:relative;
+  border-radius:3px; overflow:hidden; background:#fff;
+  box-shadow:0 24px 52px rgba(45,40,30,.20), 0 2px 6px rgba(45,40,30,.14);
+  /* Ang invitation ay halos 5x7 — mas mataas kaysa malapad, pero hindi
+     kasingtaas ng telepono. Kailangan nitong mas malapad para punan ang
+     parehong taas, kung hindi ay lumulutang ito sa gitna ng post. */
+  width:452px;
+}
+.card img{width:100%; display:block}
+/* Isang buhok na linya sa gilid — kung wala ito, nawawala ang maputing card
+   sa maputing papel. */
+.card::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(45,40,30,.10);
+}
+/* ---------- grid: buong suite sa isang tingin ---------- */
+/* Kapag walo ang pahina, walang saysay ang malalaking card — ang bilang
+   mismo ang mensahe. Maliliit na tile na may sariling anino. */
+.grid{
+  display:grid; gap:20px; flex:0 0 auto; margin:0 auto; max-width:100%;
+  grid-template-columns:repeat(4, 1fr);
+}
+.grid[data-n="2"],.grid[data-n="4"]{grid-template-columns:repeat(2, 1fr); max-width:520px}
+.grid[data-n="3"],.grid[data-n="5"],.grid[data-n="6"],
+.grid[data-n="9"]{grid-template-columns:repeat(3, 1fr); max-width:700px}
+.grid .tile{
+  position:relative; background:#fff; border-radius:2px; overflow:hidden;
+  box-shadow:0 10px 22px rgba(45,40,30,.16), 0 1px 3px rgba(45,40,30,.12);
+}
+.grid .tile::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(45,40,30,.10);
+}
+.grid .tile img{width:100%; display:block}
+
+/* ---------- blur: para sa listahan ng pangalan ---------- */
+/* Ang header ay nananatiling malinaw; ang listahan sa ibaba ay hindi na
+   nababasa. Nakikita pa rin ang lawak ng trabaho, wala na ang pangalan. */
+.blurwrap{position:relative; overflow:hidden}
+.blurwrap img{display:block; width:100%}
+.blurwrap .veil{
+  position:absolute; left:0; right:0; bottom:0;
+  backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px);
+}
+
+/* "plain" — walang kahon. Para sa larawang may sariling ayos na, gaya ng
+   isang buong suite na pinagsama-sama sa isang grid. */
+.plainimg{flex:0 0 auto; margin:0 auto; max-width:100%}
+.plainimg img{width:100%; display:block}
+
+.cards{display:flex; align-items:flex-start; justify-content:center; flex:0 0 auto; margin:0 auto}
+.cards .card{position:relative}
+/* 2s + c - 2o <= 888 (ang lapad sa loob ng padding). Kung lalampas,
+   pinipiga ng flex ang mga card at nasisira ang proporsyon ng papel. */
+.cards[data-n="3"] .card:nth-child(1){width:310px; margin-right:-54px; margin-top:58px; z-index:1}
+.cards[data-n="3"] .card:nth-child(2){width:364px; z-index:3}
+.cards[data-n="3"] .card:nth-child(3){width:310px; margin-left:-54px;  margin-top:58px; z-index:1}
+.cards[data-n="2"] .card{width:372px}
+.cards[data-n="2"] .card:nth-child(2){margin-left:-72px; margin-top:56px; z-index:1}
+body[data-fit="s"]  .card{width:420px}
+body[data-fit="xs"] .card{width:388px}
+
+/* Maraming screen sa isang post. Ang gitna ang bida — mas malaki at nasa
+   harap; ang gilid ay bahagyang mas maliit at nakababa, kaya may lalim ang
+   pangkat nang hindi kailangang ipihit ang mga ito nang pahilis. */
+.devices{
+  display:flex; align-items:flex-start; justify-content:center;
+  flex:0 0 auto; margin:0 auto;
+}
+.devices .device{position:relative; margin:0}
+/* Ang patong ay maliit lang. Kung malalim, natatakpan ang gitna ng mga
+   gilid na screen — at doon mismo nakaupo ang teksto ng site. */
+.devices .device:nth-child(1){width:272px; margin-right:-24px; margin-top:46px; z-index:1}
+.devices .device:nth-child(2){width:316px; z-index:3}
+.devices .device:nth-child(3){width:272px; margin-left:-24px;  margin-top:46px; z-index:1}
+.devices .device:nth-child(1) .screen,
+.devices .device:nth-child(3) .screen{height:500px}
+.devices .device:nth-child(2) .screen{height:578px}
+.devices .device:nth-child(1),
+.devices .device:nth-child(3){box-shadow:0 18px 40px rgba(45,40,30,.18)}
+/* Dalawa lang ang larawan: pantay silang dalawa, walang gitna. */
+.devices[data-n="2"] .device:nth-child(1),
+.devices[data-n="2"] .device:nth-child(2){width:290px; margin-top:0; z-index:2}
+.devices[data-n="2"] .device:nth-child(2){margin-left:-38px; margin-top:46px; z-index:1}
+.devices[data-n="2"] .device .screen{height:520px}
+
+body[data-fit="s"]  .devices .device:nth-child(2) .screen{height:536px}
+body[data-fit="s"]  .devices .device:nth-child(1) .screen,
+body[data-fit="s"]  .devices .device:nth-child(3) .screen{height:462px}
+body[data-fit="xs"] .devices .device:nth-child(2) .screen{height:494px}
+body[data-fit="xs"] .devices .device:nth-child(1) .screen,
+body[data-fit="xs"] .devices .device:nth-child(3) .screen{height:426px}
+
+.chips{
+  display:flex; gap:12px; justify-content:center; flex-wrap:wrap;
+  margin-top:32px; max-width:94%;
+}
+.chips span{
+  font-family:'Jost',sans-serif; font-weight:400; font-size:22px;
+  letter-spacing:.02em; color:var(--sage-deep);
+  border:1px solid rgba(93,107,80,.32); border-radius:99px;
+  padding:11px 24px; background:rgba(255,255,255,.42);
+}
+body[data-fit="s"]  [data-variant="showcase"] h1{font-size:48px}
+body[data-fit="xs"] [data-variant="showcase"] h1{font-size:43px}
+body[data-fit="s"]  .device{width:306px}
+body[data-fit="s"]  .device .screen{height:574px}
+body[data-fit="xs"] .device{width:288px}
+body[data-fit="xs"] .device .screen{height:540px}
+
+/* Sa madilim na papel, mas malapot ang anino at mas maliwanag ang chips. */
+[data-variant="showcase"][data-paper="kraft"] .chips span{background:rgba(255,255,255,.36)}
+
 [data-variant="feature"] .canvas{background:linear-gradient(168deg,#5d6b50 0%,#485438 100%)}
 /* Ang feature ay laging madilim, pero hindi laging iisang lalim ng sage. */
 body[data-paper="chalk"][data-variant="feature"] .canvas{background:linear-gradient(168deg,#3c4433 0%,#242a1e 100%)}
@@ -393,6 +553,72 @@ switch (variant) {
         <div class="coldiv"></div>
         <div class="col b"><h3>${esc(c.rightTitle||'Sa Anyaya')}</h3><ul>${li(c.right,'✓')}</ul></div>
       </div>${foot}`;
+    break;
+  }
+
+  case 'showcase': {
+    // Ang larawan ay ipinapasok na base64 ng render.js, kaya walang network
+    // call sa oras ng render — pareho ang labas saanman ito tumakbo.
+    const chips = (D.items || []).slice(0, 3)
+      .map(t => `<span>${esc(t)}</span>`).join('');
+
+    const imgs = (D.images && D.images.length ? D.images : [D.image]).filter(Boolean);
+
+    // "card" para sa naka-imprentang papel, "phone" para sa screen.
+    // Magkaibang bagay ang ipinapakita, kaya magkaibang kahon.
+    const kind   = D.frame || 'phone';
+    const isCard = kind === 'card';
+    const wrap   = isCard ? 'cards' : 'devices';
+
+    // Ang blur ay inilalagay sa ibabaw ng larawan, hindi sa larawan mismo —
+    // kaya hindi na kailangan ng ibang programa bago i-render.
+    // Kada-larawan ang blur. Isang numero = pareho sa lahat; listahan =
+    // tig-isa. Kailangan ito dahil sa isang suite, ang listahan lang ng
+    // pangalan ang binubura — hindi ang invitation mismo.
+    const bb = D.blurBelow;
+    const below = i => Number(Array.isArray(bb) ? (bb[i] || 0) : (bb || 0)) || 0;
+
+    const pic = (src, i = 0) => below(i)
+      ? `<div class="blurwrap"><img src="${esc(src)}" alt="">` +
+        `<div class="veil" style="top:${below(i)}%"></div></div>`
+      : `<img src="${esc(src)}" alt="">`;
+
+    const frame  = (src, i) => isCard
+      ? `<div class="card">${pic(src, i)}</div>`
+      : `<div class="device"><div class="screen">${pic(src, i)}</div></div>`;
+
+    if (kind === 'grid') {
+      const tiles = imgs.map((v, i) => `<div class="tile">${pic(v, i)}</div>`).join('');
+      html = `${eyebrow}<h1>${rich(D.headline)}</h1>${body}
+        <div class="grid" data-n="${imgs.length}">${tiles}</div>
+        ${chips ? `<div class="chips">${chips}</div>` : ''}${foot}`;
+      break;
+    }
+
+    if (kind === 'plain') {
+      html = `${eyebrow}<h1>${rich(D.headline)}</h1>${body}
+        <div class="plainimg">${pic(imgs[0])}</div>
+        ${chips ? `<div class="chips">${chips}</div>` : ''}${foot}`;
+      break;
+    }
+
+    // Isa lang: nakatayo mag-isa. Marami: pangkat, gitna ang bida.
+    // Ang pinakamalakas na larawan ang inilalagay sa gitna — index 0.
+    let block;
+    if (imgs.length === 1) {
+      block = frame(imgs[0]);
+    } else if (imgs.length === 2) {
+      block = `<div class="${wrap}" data-n="2">${imgs.map((v, i) => frame(v, i)).join('')}</div>`;
+    } else {
+      // Index 0 ang gitna. Pinapanatili ang tamang blur kahit nagbago ang ayos.
+      const order = [1, 0, 2];
+      block = `<div class="${wrap}" data-n="3">` +
+        order.map(i => frame(imgs[i], i)).join('') + '</div>';
+    }
+
+    html = `${eyebrow}<h1>${rich(D.headline)}</h1>${body}
+      ${block}
+      ${chips ? `<div class="chips">${chips}</div>` : ''}${foot}`;
     break;
   }
 
