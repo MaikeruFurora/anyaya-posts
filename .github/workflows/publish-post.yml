@@ -41,7 +41,7 @@ jobs:
         run: |
           # Nasa bot/route.sh ang logic — hindi dito. Ganoon lang ito
           # masusubok: `bot/route.test.sh` ang nagpapatakbo ng 26 na kaso.
-          OUT=$(bot/route.sh "$BODY" "$TITLE")
+          OUT=$(bash bot/route.sh "$BODY" "$TITLE")
           echo "$OUT"
           echo "$OUT" >> "$GITHUB_OUTPUT"
 
