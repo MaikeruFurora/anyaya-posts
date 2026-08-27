@@ -4,9 +4,15 @@ name: Daily post
 
 on:
   schedule:
-    # 22:00 UTC = 6:00 AM sa Maynila. Nahuhuli ang GitHub nang 10-30 minuto
-    # kapag matao — walang halaga iyon sa araw-araw na post.
-    - cron: '0 22 * * *'
+    # Tatlong alarma, hindi isa. Sa public repo, ang orasan ng GitHub ay
+    # nahuhuli nang ilang oras at minsan hindi na tumatakbo — at kapag
+    # nangyari iyon sa iisang alarma, nawawala ang buong araw.
+    #
+    # Ligtas ang pag-ulit: bago gumalaw, tinitingnan ng make-post.yml kung
+    # may post na para sa araw na ito. Kung meron, tahimik itong huhupa.
+    - cron: '0 22 * * *'    # 6:00 AM Maynila
+    - cron: '15 23 * * *'   # 7:15 AM — kung hindi pumutok ang una
+    - cron: '45 0 * * *'    # 8:45 AM — huling subok
   workflow_dispatch:
     inputs:
       date:
@@ -33,3 +39,6 @@ jobs:
       date: ${{ inputs.date }}
       dry:  ${{ inputs.dry == true }}
       variation: 0
+      # Ang orasan ay hindi dapat gumawa ng pangalawang post kung may naunang
+      # pumutok na. Ang pindot mo ay laging tumutuloy.
+      skip_if_exists: ${{ github.event_name == 'schedule' }}

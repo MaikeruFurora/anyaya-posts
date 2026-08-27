@@ -26,6 +26,11 @@ case "$WORD" in
     ACTION=regen ;;
   skip|huwag|hindi|no|wag)
     ACTION=skip ;;
+  # Habang naka-pila sa Meta business verification, ikaw ang nagpo-post sa
+  # Business Suite. Ito ang paraan para isara ang issue nang tama — hindi
+  # "nilaktawan", kundi "nailabas ko na mismo".
+  posted|manual|"posted na"|"na-post ko na"|"na post ko na"|"post ko na"|tapos)
+    ACTION=manual ;;
   *)
     ACTION=none ;;
 esac

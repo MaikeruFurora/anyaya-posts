@@ -5,12 +5,12 @@ cd "$(dirname "$0")/.."
 fail=0
 t() { # t <inaasahan> <comment> [pamagat]
   local want="$1" body="$2" title="${3:-Post para sa 2026-08-27 — approve?}"
-  local got; got=$(bot/route.sh "$body" "$title" | grep '^action=' | cut -d= -f2)
+  local got; got=$(bash bot/route.sh "$body" "$title" | grep '^action=' | cut -d= -f2)
   if [ "$got" = "$want" ]; then printf '✓ %-26s → %s\n' "'$body'" "$got"
   else printf '✗ %-26s → %s (dapat %s)\n' "'$body'" "$got" "$want"; fail=$((fail+1)); fi
 }
 f() { # f <field> <inaasahan> <pamagat>
-  local got; got=$(bot/route.sh "post" "$3" | grep "^$1=" | cut -d= -f2)
+  local got; got=$(bash bot/route.sh "post" "$3" | grep "^$1=" | cut -d= -f2)
   if [ "$got" = "$2" ]; then printf '✓ %-10s %s\n' "$1" "$got"
   else printf '✗ %-10s %s (dapat %s)\n' "$1" "$got" "$2"; fail=$((fail+1)); fi
 }
@@ -22,6 +22,8 @@ t regen "skip and generate"
 t regen "Skip And Generate."
 t regen "skip  and   generate"
 t regen "ulit";      t regen "iba naman";  t regen "generate"
+t manual "posted";      t manual "manual";    t manual "Posted na."
+t manual "na-post ko na"; t manual "tapos"
 t none  "ang ganda nito"
 t none  "post it later"          # hindi eksakto — hindi dapat sumunod
 t none  ""

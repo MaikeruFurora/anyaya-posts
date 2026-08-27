@@ -91,10 +91,15 @@ jobs:
       - name: I-commit ang larawan at ang caption
         run: |
           cp /tmp/post/post.json "docs/posts/${{ steps.gen.outputs.base }}.json"
+
+          # Hindi kayang maglista ng folder ang GitHub Pages, kaya tayo na ang
+          # gumagawa ng listahan. Ito ang binabasa ng docs/admin.html.
+          node bot/index-posts.js
           git config user.name  'anyaya-bot'
           git config user.email 'anyaya-bot@users.noreply.github.com'
           git add "docs/posts/${{ steps.gen.outputs.base }}.jpg" \
-                  "docs/posts/${{ steps.gen.outputs.base }}.json"
+                  "docs/posts/${{ steps.gen.outputs.base }}.json" \
+                  docs/posts/index.json
           git commit -m "Showcase post ${{ steps.gen.outputs.base }}" || {
             echo "Walang pagbabago."; exit 0; }
           for i in 1 2 3; do
@@ -137,8 +142,13 @@ jobs:
           gh label create "showcase" --color "5d6b50" \
             --description "Totoong gawa" 2>/dev/null || true
 
+          TITLE="Post para sa ${{ steps.gen.outputs.base }} — approve?"
+          if [ "${{ inputs.dry }}" = "true" ]; then
+            TITLE="Post para sa ${{ steps.gen.outputs.base }} — SAMPLE, huwag i-post"
+          fi
+
           URL=$(gh issue create \
-            --title "Post para sa ${{ steps.gen.outputs.base }} — approve?" \
+            --title "$TITLE" \
             --body-file /tmp/issue.md \
             --label "pending-approval" --label "showcase" \
             --assignee "${{ github.repository_owner }}")

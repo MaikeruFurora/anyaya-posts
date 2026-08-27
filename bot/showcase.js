@@ -134,6 +134,8 @@ const DRY = {
   fs.writeFileSync(path.join(outDir, 'design.json'), JSON.stringify(out.design, null, 2));
   fs.writeFileSync(path.join(outDir, 'post.json'), JSON.stringify({
     ...ctx, images,
+    // Tingnan ang bot/generate.js — ganito rin ang dahilan dito.
+    dry: has('--dry'),
     caption: out.caption, captionOnly: out.captionOnly, hashtags: out.hashtags,
   }, null, 2));
 

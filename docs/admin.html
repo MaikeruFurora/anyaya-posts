@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Anyaya — Post Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@300;400;500&display=swap">
+<style>
+:root{
+  --ground:#f2f4ef; --card:#fff; --sunk:#e9ede4; --veil:rgba(242,244,239,.86);
+  --ink:#1b201a; --soft:#5a6152; --faint:#868d7c;
+  --sage:#46592f; --kraft:#96692c; --line:#d6dcd0; --edge:#c6cebe;
+  --ok:#2f6b3a; --warn:#a33a2a;
+  --shadow:0 1px 2px rgba(27,32,26,.05), 0 12px 28px -18px rgba(27,32,26,.35);
+  --lift:0 2px 4px rgba(27,32,26,.06), 0 20px 42px -20px rgba(27,32,26,.45);
+}
+@media (prefers-color-scheme:dark){
+  :root{--ground:#121510; --card:#1a1e17; --sunk:#232820; --veil:rgba(18,21,16,.86);
+        --ink:#e9ede3; --soft:#a3ab96; --faint:#7c8471;
+        --sage:#a9c48f; --kraft:#dca962; --line:#2b3126; --edge:#39412f;
+        --ok:#7fc08d; --warn:#e08b78;
+        --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 28px -18px rgba(0,0,0,.9);
+        --lift:0 2px 4px rgba(0,0,0,.45), 0 20px 42px -20px rgba(0,0,0,1);}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:'Jost',system-ui,sans-serif;font-weight:300;font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased}
+
+.mark{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:13px;
+  letter-spacing:.34em;text-transform:uppercase;color:var(--kraft);margin:0}
+.mark span{color:var(--faint);font-weight:400}
+
+button,a.btn{font-family:inherit;font-size:14px;font-weight:400;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  padding:8px 15px;border-radius:999px;text-decoration:none;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  transition:border-color .15s ease,color .15s ease,background .15s ease}
+button:hover,a.btn:hover{border-color:var(--sage);color:var(--sage)}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--sage);outline-offset:2px}
+
+/* ---------- ang harang ---------- */
+.gate{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:var(--ground)}
+.gate-card{width:100%;max-width:372px;background:var(--card);border:1px solid var(--line);
+  border-radius:8px;padding:36px 32px 28px;box-shadow:var(--shadow)}
+.gate-card h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:38px;
+  line-height:1.1;margin:14px 0 6px}
+.gate-sub{color:var(--faint);font-size:14px;margin:0 0 22px}
+.field{width:100%;font-family:inherit;font-size:16px;font-weight:300;color:var(--ink);
+  background:var(--sunk);border:1px solid var(--line);border-radius:4px;padding:11px 14px}
+.field::placeholder{color:var(--faint)}
+.remember{display:flex;gap:9px;align-items:center;font-size:13px;color:var(--soft);
+  margin:14px 0 20px;cursor:pointer;user-select:none}
+.remember input{width:16px;height:16px;accent-color:var(--sage);cursor:pointer}
+.primary{width:100%;justify-content:center;background:var(--sage);border-color:var(--sage);
+  color:var(--ground);font-weight:400}
+.primary:hover{filter:brightness(1.12);color:var(--ground);border-color:var(--sage)}
+.gate-err{color:var(--warn);font-size:13px;margin:14px 0 0}
+.gate-note{color:var(--faint);font-size:12px;line-height:1.5;margin:22px 0 0;
+  padding-top:16px;border-top:1px solid var(--line)}
+
+/* ---------- ulo ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:34px 18px 110px}
+header{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;justify-content:space-between;
+  margin-bottom:20px}
+h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:42px;
+  line-height:1.05;margin:8px 0 0}
+.links{display:flex;gap:8px;flex-wrap:wrap;padding-top:6px}
+
+/* Ang bilang: tatlong numero, malaki ang una — iyon ang tinitingnan araw-araw. */
+.stats{display:flex;gap:26px;flex-wrap:wrap;margin:16px 0 0;padding:0;list-style:none}
+.stats li{display:flex;flex-direction:column;gap:1px}
+.stats b{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:30px;
+  line-height:1;color:var(--ink)}
+.stats b.hot{color:var(--kraft)}
+.stats span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+
+/* Dumidikit ang salaan — mahaba ang listahan, at kailangan itong maabot
+   kahit nasa ilalim ka na. */
+.toolbar{position:sticky;top:0;z-index:6;display:flex;gap:10px;flex-wrap:wrap;
+  align-items:center;padding:14px 0;margin-bottom:22px;
+  background:var(--veil);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;
+  background:var(--card);padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:6px 15px;border-radius:999px;color:var(--soft)}
+.seg button:hover{color:var(--sage);background:var(--sunk)}
+.seg button.on{background:var(--sage);color:var(--ground)}
+.seg button.on:hover{color:var(--ground);background:var(--sage)}
+.search{flex:1 1 200px;max-width:300px;font-family:inherit;font-weight:300;font-size:14px;
+  padding:8px 15px;border-radius:999px;background:var(--card);border:1px solid var(--line);
+  color:var(--ink)}
+.search::placeholder{color:var(--faint)}
+.hint{font-size:12px;color:var(--faint);margin-left:auto;letter-spacing:.03em}
+@media (max-width:720px){.hint{display:none}}
+
+/* ---------- ang mga card ---------- */
+.grid{display:grid;gap:22px;grid-template-columns:repeat(auto-fill,minmax(336px,1fr))}
+.post{background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden;
+  display:flex;flex-direction:column;box-shadow:var(--shadow);
+  transition:box-shadow .2s ease,border-color .2s ease,opacity .2s ease}
+.post:hover{box-shadow:var(--lift);border-color:var(--edge)}
+.post.done{opacity:.5}
+.post.done:hover{opacity:.92}
+.post.leaving{opacity:0;transform:scale(.98)}
+
+/* Ang larawan ay pambungad sa malaking tingin. Ang download ay may
+   sariling pindutan sa ibaba, may pangalan. */
+.shot{display:block;position:relative;line-height:0;width:100%;padding:0;border:0;
+  border-radius:0;background:var(--sunk);cursor:zoom-in}
+.shot:hover{border:0}
+.shot img{width:100%;display:block;aspect-ratio:4/5;object-fit:cover;transition:filter .2s ease}
+.shot:hover img,.shot:focus-visible img{filter:brightness(.86)}
+.shot::after{content:'Click to enlarge';position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%);background:var(--card);color:var(--ink);
+  border:1px solid var(--line);border-radius:999px;padding:8px 16px;
+  font-family:inherit;font-size:14px;font-weight:400;line-height:1.4;
+  opacity:0;transition:opacity .2s ease;pointer-events:none;
+  box-shadow:var(--shadow);white-space:nowrap}
+.shot:hover::after,.shot:focus-visible::after{opacity:1}
+
+.meta{padding:15px 16px 0;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.date{color:var(--ink);font-weight:400;font-size:15px}
+.ago{font-size:12px;color:var(--faint);margin-right:auto}
+.tags{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px 0}
+.tag{border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:11px;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--soft);white-space:nowrap}
+.tag.craft{border-color:var(--kraft);color:var(--kraft)}
+.tag.rsvp,.tag.showcase{border-color:var(--sage);color:var(--sage)}
+.tag.sample{border-color:var(--warn);color:var(--warn)}
+.angle{padding:11px 16px 0;margin:0;font-size:14px;color:var(--soft)}
+.cap{margin:12px 16px 8px;padding:12px 13px;background:var(--sunk);border:1px solid var(--line);
+  border-radius:4px;font-size:13px;line-height:1.55;white-space:pre-wrap;
+  max-height:150px;overflow:auto;flex:1 1 auto}
+.len{padding:0 16px;margin:0;font-size:11px;color:var(--faint);letter-spacing:.04em}
+.acts{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px 16px;align-items:center}
+.check{display:flex;gap:7px;align-items:center;font-size:14px;color:var(--soft);
+  margin-left:auto;cursor:pointer;user-select:none}
+.check input{width:17px;height:17px;accent-color:var(--sage);cursor:pointer}
+.post.done .check{color:var(--ok)}
+
+/* ---------- kalagayan ---------- */
+.more-wrap{display:flex;justify-content:center;padding:34px 0 0}
+.empty{color:var(--faint);padding:70px 0;text-align:center;font-size:15px}
+.skel{background:var(--card);border:1px solid var(--line);border-radius:6px;height:520px;
+  box-shadow:var(--shadow);position:relative;overflow:hidden}
+.skel::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(100deg,transparent 20%,var(--sunk) 50%,transparent 80%);
+  animation:sweep 1.3s infinite}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(90px);
+  background:var(--sage);color:var(--ground);padding:11px 22px;border-radius:999px;
+  font-size:14px;transition:transform .22s ease;z-index:60;box-shadow:var(--lift)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ---------- ang malaking tingin ---------- */
+/* Kailangan ang [hidden] rule: tinatalo ng display:flex ang hidden attribute. */
+.lb{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+  background:rgba(12,15,10,.94)}
+.lb[hidden]{display:none}
+.lb-bar{display:flex;gap:10px;align-items:center;padding:14px 18px;flex:0 0 auto}
+.lb-title{font-size:14px;color:#e9ede3;margin-right:auto;letter-spacing:.02em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-bar .btn,.lb-bar button{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.22);
+  color:#e9ede3}
+.lb-bar .btn:hover,.lb-bar button:hover{border-color:#e9ede3;color:#fff;background:rgba(255,255,255,.16)}
+.lb-stage{flex:1 1 auto;overflow:auto;display:flex;align-items:center;justify-content:center;
+  padding:0 18px 22px}
+.lb-stage img{max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;
+  border-radius:3px;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)}
+.lb-stage.zoomed{align-items:flex-start;justify-content:flex-start}
+.lb-stage.zoomed img{max-width:none;max-height:none;width:1080px;cursor:zoom-out;margin:auto}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:560px){
+  h1{font-size:34px}
+  .stats{gap:20px}
+  .stats b{font-size:26px}
+  .lb-title{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <form class="gate-card" id="gateForm">
+    <p class="mark">Anyaya <span>Designs</span></p>
+    <h1>Post Desk</h1>
+    <p class="gate-sub">Enter the admin password to continue.</p>
+    <input class="field" type="password" id="pass" placeholder="Password"
+           autocomplete="current-password" required autofocus>
+    <label class="remember">
+      <input type="checkbox" id="remember" checked> Stay unlocked on this device
+    </label>
+    <button type="submit" class="primary">Unlock</button>
+    <p class="gate-err" id="gateErr" role="alert" hidden></p>
+    <p class="gate-note">
+      A convenience lock, not security. The repository and its images are public —
+      anyone with a direct link can still open them.
+    </p>
+  </form>
+</div>
+
+<div class="wrap" id="app" hidden>
+  <header>
+    <div>
+      <p class="mark">Anyaya <span>Designs</span></p>
+      <h1>Post Desk</h1>
+      <ul class="stats">
+        <li><b class="hot" id="nTodo">—</b><span>To post</span></li>
+        <li><b id="nDone">—</b><span>Posted</span></li>
+        <li><b id="nAll">—</b><span>Total</span></li>
+      </ul>
+    </div>
+    <div class="links">
+      <a class="btn" href="https://business.facebook.com/latest/composer"
+         target="_blank" rel="noopener">Business Suite &#8599;</a>
+      <a class="btn" id="runLink" target="_blank" rel="noopener">New post &#8599;</a>
+      <button id="lock" title="Lock this dashboard">Lock</button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <input class="search" type="search" id="q" placeholder="Search captions, angles, dates"
+           aria-label="Search posts">
+    <div class="seg" role="group" aria-label="Filter posts">
+      <button id="fAll" class="on">All</button>
+      <button id="fTodo">To post</button>
+      <button id="fDone">Posted</button>
+    </div>
+    <span class="hint" id="hint"></span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="empty" hidden></p>
+  <div class="more-wrap" id="moreWrap" hidden>
+    <button id="more"></button>
+  </div>
+</div>
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Post image">
+  <div class="lb-bar">
+    <span class="lb-title" id="lbTitle"></span>
+    <a class="btn" id="lbDownload" download>Download image</a>
+    <button id="lbClose">Close &#10005;</button>
+  </div>
+  <div class="lb-stage" id="lbStage">
+    <img id="lbImg" alt="">
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------------------------------------------------------------------
+ * Ang harang.
+ *
+ * Static ang GitHub Pages — walang server na makakapagtago ng laman. Kaya ang
+ * password na ito ay pantakip sa mata ng dumaraan, hindi seguridad: nasa
+ * view-source ang hash, at nakukuha pa rin nang diretso ang posts/*.jpg.
+ * Sinasadya ito — publiko naman ang repo. Ang gusto lang: huwag madulas ang
+ * sinuman papasok sa dashboard.
+ *
+ * Para palitan ang password, kunin ang bagong hash:
+ *   node -e "console.log(require('crypto').createHash('sha256').update('BAGONG-PASSWORD').digest('hex'))"
+ * at ipalit ang lumabas sa PASS_HASH sa ibaba.
+ * ------------------------------------------------------------------------- */
+const PASS_HASH = '0e52155bdc4974f235f76ba4915862150d7ea910c3ad99e40803ddb3e625ad8a';
+const UNLOCK_KEY = 'anyaya.unlock.v1';
+
+const gate = document.getElementById('gate');
+const app = document.getElementById('app');
+const gateErr = document.getElementById('gateErr');
+
+const sha256 = async text => {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+// localStorage kung sinabi mong tandaan, sessionStorage kung hindi — mawawala
+// iyon pagsara ng tab.
+const remembered = () => {
+  try { return localStorage.getItem(UNLOCK_KEY) || sessionStorage.getItem(UNLOCK_KEY); }
+  catch { return null; }
+};
+
+function unlock() {
+  gate.remove();
+  app.hidden = false;
+  load();
+}
+
+document.getElementById('gateForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  gateErr.hidden = true;
+  const input = document.getElementById('pass');
+
+  // Kailangan ng crypto.subtle ng secure context — https o localhost lang.
+  if (!window.crypto || !crypto.subtle) {
+    gateErr.textContent = 'This page needs https or localhost to check the password.';
+    gateErr.hidden = false;
+    return;
+  }
+
+  const hash = await sha256(input.value);
+  if (hash !== PASS_HASH) {
+    gateErr.textContent = 'Wrong password.';
+    gateErr.hidden = false;
+    input.select();
+    return;
+  }
+
+  try {
+    const store = document.getElementById('remember').checked ? localStorage : sessionStorage;
+    store.setItem(UNLOCK_KEY, hash);
+  } catch { /* private mode — papasok pa rin, hindi lang maaalala */ }
+  unlock();
+});
+
+/* ---------------------------------------------------------------------------
+ * Ang dashboard.
+ *
+ * Ang buong grid ay dating muling itinatayo sa bawat pindot ng letra at sa
+ * bawat tickmark — O(n) kada galaw. Sa 1,000 post ay 47 ms iyon sa laptop, at
+ * apat na beses iyon sa telepono. Kaya ngayon:
+ *
+ *   - PAGE na card lang ang nasa DOM; may "Load more" ang natitira
+ *   - may debounce ang search — hindi kada letra ang pagsala
+ *   - ang tickmark ay humihipo ng iisang card, hindi ng buong listahan
+ *
+ * Dahil dito, hindi na mahalaga kung ilan ang post.
+ * ------------------------------------------------------------------------- */
+const KEY = 'anyaya.posted.v1';
+const PAGE = 24;
+const done = new Set(JSON.parse(localStorage.getItem(KEY) || '[]'));
+const save = () => localStorage.setItem(KEY, JSON.stringify([...done]));
+
+// Kapag lokal na tinitingnan, walang owner/repo sa hostname — ito ang salalay.
+const FALLBACK_REPO = 'MaikeruFurora/anyaya-posts';
+const onPages = location.hostname.endsWith('github.io');
+const repoSlug = onPages
+  ? `${location.hostname.split('.')[0]}/${location.pathname.split('/').filter(Boolean)[0] || ''}`
+  : FALLBACK_REPO;
+document.getElementById('runLink').href =
+  `https://github.com/${repoSlug}/actions/workflows/daily-post.yml`;
+
+const grid = document.getElementById('grid');
+const emptyEl = document.getElementById('empty');
+const moreWrap = document.getElementById('moreWrap');
+const moreBtn = document.getElementById('more');
+
+const toast = m => {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 1900);
+};
+
+const SERVICE = { rsvp: 'RSVP website', craft: 'Craft cards', showcase: 'Real work' };
+
+let posts = [];      // lahat ng nasa index.json
+let filtered = [];   // ang nakapasa sa salaan at search
+let shown = 0;       // ilan ang tunay na nasa DOM
+let filter = 'all';
+let query = '';
+
+/* ---------- ang malaking tingin ---------- */
+const lb = document.getElementById('lb');
+const lbImg = document.getElementById('lbImg');
+const lbStage = document.getElementById('lbStage');
+let lastFocus = null;
+
+function openLightbox(p) {
+  lastFocus = document.activeElement;
+  lbImg.src = `posts/${p.base}.jpg`;
+  lbImg.alt = `Post image for ${p.slug}`;
+  document.getElementById('lbTitle').textContent = `${p.slug} — ${p.angle || ''}`;
+  const dl = document.getElementById('lbDownload');
+  dl.href = `posts/${p.base}.jpg`;
+  dl.setAttribute('download', `anyaya-${p.base}.jpg`);
+  lbStage.classList.remove('zoomed');
+  lb.hidden = false;
+  document.body.style.overflow = 'hidden';
+  document.getElementById('lbClose').focus();
+}
+
+function closeLightbox() {
+  lb.hidden = true;
+  lbImg.removeAttribute('src');   // itigil ang pag-load kung malaki pa
+  document.body.style.overflow = '';
+  if (lastFocus) lastFocus.focus();
+}
+
+document.getElementById('lbClose').addEventListener('click', closeLightbox);
+lbImg.addEventListener('click', () => lbStage.classList.toggle('zoomed'));
+// Ang pindot sa labas ng larawan ay pagsasara — pero hindi sa larawan mismo.
+lbStage.addEventListener('click', e => { if (e.target === lbStage) closeLightbox(); });
+
+/* ---------- petsa sa salitang tao ---------- */
+function ago(slug) {
+  const then = new Date(slug + 'T00:00:00');
+  if (isNaN(then)) return '';
+  const days = Math.round((Date.now() - then) / 86400000);
+  if (days < 0) return `in ${-days} day${-days === 1 ? '' : 's'}`;
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days} days ago`;
+  const months = Math.round(days / 30);
+  if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`;
+  const years = Math.round(days / 365);
+  return `${years} year${years === 1 ? '' : 's'} ago`;
+}
+
+/* ---------- ang card ---------- */
+function card(p) {
+  const el = document.createElement('article');
+  el.className = 'post' + (done.has(p.base) ? ' done' : '');
+  const svc = SERVICE[p.subject] || p.subject || '';
+  const caption = p.caption || '';
+
+  el.innerHTML = `
+    <button class="shot" type="button" aria-label="Enlarge the image for ${p.slug}">
+      <img loading="lazy" src="posts/${p.base}.jpg" alt="">
+    </button>
+    <div class="meta">
+      <span class="date">${p.slug}</span>
+      <span class="ago">${ago(p.slug)}</span>
+    </div>
+    <div class="tags">
+      <span class="tag ${p.subject || ''}">${svc}</span>
+      <span class="tag">${p.variant || ''}</span>
+      <span class="tag">${p.paper || ''}</span>
+      ${p.dry ? '<span class="tag sample">Sample &mdash; do not post</span>' : ''}
+    </div>
+    <p class="angle">${p.angle || ''}</p>
+    <div class="cap"></div>
+    <p class="len">${caption.length} characters &middot; ${(caption.match(/#\w+/g) || []).length} hashtags</p>
+    <div class="acts">
+      <a class="btn" href="posts/${p.base}.jpg" download="anyaya-${p.base}.jpg">Download image</a>
+      <button class="copy">Copy caption</button>
+      <label class="check"><input type="checkbox" ${done.has(p.base) ? 'checked' : ''}> Posted</label>
+    </div>`;
+
+  // textContent, hindi innerHTML — galing sa AI ang caption at hindi ito markup.
+  el.querySelector('.cap').textContent = caption;
+
+  el.querySelector('.shot').addEventListener('click', () => openLightbox(p));
+  el.querySelector('.btn').addEventListener('click', () => toast('Downloading image…'));
+
+  const copyBtn = el.querySelector('.copy');
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(caption);
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(() => { copyBtn.textContent = 'Copy caption'; }, 1500);
+      toast('Caption copied');
+    } catch { toast('Could not copy — select it and press Ctrl+C'); }
+  });
+
+  el.querySelector('.check input').addEventListener('change', e => setDone(p, el, e.target.checked));
+  return el;
+}
+
+/* ---------- ang tickmark: iisang card, hindi buong listahan ---------- */
+function setDone(p, el, on) {
+  on ? done.add(p.base) : done.delete(p.base);
+  save();
+  el.classList.toggle('done', on);
+
+  // Kung hindi na ito kabilang sa bukas na salaan, alisin ang isang card at
+  // punan ang puwang mula sa natitira — hindi muling itayo ang lahat.
+  const excluded = (filter === 'todo' && on) || (filter === 'done' && !on);
+  if (excluded) {
+    const i = filtered.indexOf(p);
+    if (i > -1) filtered.splice(i, 1);
+    el.classList.add('leaving');
+    setTimeout(() => {
+      el.remove();
+      shown--;
+      appendMore(1);      // panatilihing puno ang bintana
+      paintChrome();
+    }, 200);
+  }
+  paintChrome();
+}
+
+/* ---------- pagbuo ---------- */
+function appendMore(n) {
+  const next = filtered.slice(shown, shown + n);
+  if (!next.length) return;
+  const frag = document.createDocumentFragment();
+  for (const p of next) frag.appendChild(card(p));
+  grid.appendChild(frag);
+  shown += next.length;
+}
+
+// O(n) — pero tuwing nagbago lang ang salaan o ang search, hindi kada tickmark.
+function applyFilter() {
+  const q = query;
+  filtered = posts.filter(p => {
+    if (filter === 'todo' && done.has(p.base)) return false;
+    if (filter === 'done' && !done.has(p.base)) return false;
+    if (!q) return true;
+    return [p.slug, p.pillar, p.angle, p.subject, p.variant, p.paper, p.caption]
+      .join(' ').toLowerCase().includes(q);
+  });
+  grid.replaceChildren();
+  shown = 0;
+  appendMore(PAGE);
+  paintChrome();
+}
+
+function paintChrome() {
+  const todo = posts.reduce((n, p) => n + (done.has(p.base) ? 0 : 1), 0);
+  document.getElementById('nTodo').textContent = todo;
+  document.getElementById('nDone').textContent = posts.length - todo;
+  document.getElementById('nAll').textContent = posts.length;
+
+  const left = filtered.length - shown;
+  moreWrap.hidden = left <= 0;
+  moreBtn.textContent = `Load ${Math.min(PAGE, left)} more · ${left} left`;
+
+  emptyEl.hidden = filtered.length > 0;
+  emptyEl.textContent = posts.length === 0
+    ? 'Nothing here yet. Use “New post” to generate one.'
+    : 'No posts match this filter.';
+
+  document.getElementById('hint').textContent =
+    filtered.length === posts.length
+      ? `Showing ${shown} of ${posts.length}`
+      : `Showing ${shown} of ${filtered.length} matches`;
+}
+
+moreBtn.addEventListener('click', () => { appendMore(PAGE); paintChrome(); });
+
+/* ---------- salaan at search ---------- */
+const TABS = { all: 'fAll', todo: 'fTodo', done: 'fDone' };
+for (const [name, id] of Object.entries(TABS)) {
+  document.getElementById(id).addEventListener('click', () => {
+    filter = name;
+    for (const other of Object.values(TABS)) {
+      document.getElementById(other).classList.toggle('on', other === id);
+    }
+    applyFilter();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+// Hindi kada letra ang pagsala. Sa 1,000 post, ang pagkakaiba ay pagitan ng
+// tuloy-tuloy na pagta-type at ng nauutal na pahina.
+let searchTimer;
+document.getElementById('q').addEventListener('input', e => {
+  const val = e.target.value.trim().toLowerCase();
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { query = val; applyFilter(); }, 150);
+});
+
+/* ---------- teklado ---------- */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !lb.hidden) { closeLightbox(); return; }
+  if (e.target.matches('input, textarea')) {
+    if (e.key === 'Escape') { e.target.value = ''; e.target.blur(); query = ''; applyFilter(); }
+    return;
+  }
+  if (e.key === '/') { e.preventDefault(); document.getElementById('q').focus(); }
+});
+
+document.getElementById('lock').addEventListener('click', () => {
+  try { localStorage.removeItem(UNLOCK_KEY); sessionStorage.removeItem(UNLOCK_KEY); } catch {}
+  location.reload();
+});
+
+/* ---------- pagkuha ---------- */
+function load() {
+  grid.replaceChildren(...Array.from({ length: 3 }, () => {
+    const s = document.createElement('div'); s.className = 'skel'; return s;
+  }));
+
+  fetch('posts/index.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(d => { posts = d.posts || []; applyFilter(); })
+    .catch(err => {
+      grid.replaceChildren();
+      filtered = [];
+      paintChrome();
+      emptyEl.hidden = false;
+      emptyEl.textContent = 'Could not read posts/index.json (' + err + ')';
+    });
+}
+
+if (remembered() === PASS_HASH) unlock();
+</script>
+</body>
+</html>

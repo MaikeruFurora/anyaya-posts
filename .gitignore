@@ -1,0 +1,9 @@
+# Sariling Chrome ng Puppeteer ang nasa loob nito — daan-daang megabyte.
+# Ang package-lock.json ang tala; ang `npm ci` ang bumubuo nito.
+render/node_modules/
+node_modules/
+
+# Mga gawa ng makina
+*.log
+.DS_Store
+Thumbs.db

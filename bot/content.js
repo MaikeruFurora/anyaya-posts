@@ -295,9 +295,24 @@ const TZ = 'Asia/Manila';
 function pick(when = new Date(), variation = 0) {
   const now = new Date(when.toLocaleString('en-US', { timeZone: TZ }));
   const dow = now.getDay();                       // 0 = Linggo
-  const start = new Date(now.getFullYear(), 0, 1);
-  const week = Math.floor((now - start) / 604800000);
-  const dayOfYear = Math.floor((now - start) / 86400000);
+
+  // Bilang ng araw mula 1970, kinuha sa petsa sa Maynila.
+  //
+  // Dating mula Enero 1 ng kasalukuyang taon ang bilang. Bumabalik iyon sa
+  // zero tuwing bagong taon, pero ang ikot na sinusukat nito ay hindi —
+  // kaya dalawang bagay ang nasisira kada Disyembre 31:
+  //
+  //   1. Sa taong hindi leap, ang Dis 31 ay araw 364 (gasal) at ang Ene 1
+  //      ay araw 0 (gasal din). Dalawang magkasunod na RSVP ang lumalabas.
+  //   2. Bumabalik sa simula ng pool ang angle. Isang angle ang naulit
+  //      pagkalipas lang ng 17 araw, gayong 116 ang karaniwang agwat.
+  //
+  // Ang UTC dito ay hindi tungkol sa oras — pinipigilan nito ang DST ng
+  // makina na makagalaw ng bilang ng araw.
+  const epochDay = Math.floor(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
+  const week = Math.floor(epochDay / 7);
+  const dayOfYear = epochDay;
 
   const pillar = PILLARS[dow];
 

@@ -112,6 +112,40 @@ check('slug format YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(at('2026-08-23T06:00:
   check('variation: 360 na kombinasyon, walang butas', bad === 0, `${bad} sira`);
 }
 
+/* ---------- 1c. ang hanggahan ng taon ---------- */
+{
+  // Dating mula Enero 1 ang bilang ng araw, kaya nagre-reset ito taon-taon
+  // habang ang ikot ay hindi. Dalawang bagay ang nasisira tuwing Disyembre 31:
+  // dalawang magkasunod na RSVP, at isang angle na bumabalik pagkalipas ng
+  // 17 araw. Tatlong taon ang tinatakbo rito — kailangang tumawid sa
+  // hanggahan para mahuli ito.
+  const days = 1095;
+  const rows = [];
+  for (let d = 0; d < days; d++) {
+    rows.push(at(new Date(Date.UTC(2026, 0, 1 + d, 6, 0, 0)).toISOString()));
+  }
+
+  let runs = 0;
+  for (let d = 1; d < days; d++) if (rows[d].subject === rows[d - 1].subject) runs++;
+  check('taon: walang dalawang magkasunod na parehong serbisyo', runs === 0, `${runs} pares`);
+
+  const hist = new Map();
+  rows.forEach((r, d) => {
+    const k = r.pillar + '::' + r.subject + '::' + r.angle;
+    if (!hist.has(k)) hist.set(k, []);
+    hist.get(k).push(d);
+  });
+  let closest = Infinity;
+  for (const ds of hist.values())
+    for (let i = 1; i < ds.length; i++) closest = Math.min(closest, ds[i] - ds[i - 1]);
+  check('taon: 90+ araw bago maulit ang isang angle', closest >= 90, `${closest} araw ang pinakamaikli`);
+
+  const papers = {};
+  rows.forEach(r => { papers[r.paper] = (papers[r.paper] || 0) + 1; });
+  const spread = Math.max(...Object.values(papers)) - Math.min(...Object.values(papers));
+  check('taon: pantay ang papel sa tatlong taon', spread <= 1, JSON.stringify(papers));
+}
+
 /* ---------- 2. ang request sa Gemini ---------- */
 {
   const p = at('2026-08-24T06:00:00+08:00');
@@ -232,6 +266,167 @@ for (const [label, patch] of mustFail) {
   let threw = false;
   try { validate({ ...g }, { ...base, frame: 'poster' }); } catch { threw = true; }
   check('frame: sumisigaw sa hindi kilala', threw);
+}
+
+/* ---------- 3d. walang workflow na umaasa sa executable bit ---------- */
+// Nawawala ang executable bit kapag ang file ay dumaan sa zip at Windows bago
+// ma-commit. Ang lumalabas ay "exit code 126" — walang sinasabi tungkol sa
+// tunay na dahilan. Nangyari ito noong Agosto 26 at isang araw na post ang
+// nawala. Ang tseke na ito ang pumipigil na maulit.
+{
+  const wfDir = path.join(__dirname, '..', '.github', 'workflows');
+  const bad = [];
+  if (fs.existsSync(wfDir)) {
+    for (const f of fs.readdirSync(wfDir).filter(n => n.endsWith('.yml'))) {
+      const txt = fs.readFileSync(path.join(wfDir, f), 'utf8');
+      for (const line of txt.split('\n')) {
+        // Hinahanap ang tawag sa isang .sh na hindi dumadaan sa `bash`.
+        const m = line.match(/(^|[^\w/.])((?:\.\/)?[\w./-]*\.sh)\b/);
+        if (!m) continue;
+        if (/\b(bash|sh)\s+[\w./-]*\.sh/.test(line)) continue;
+        if (/^\s*#/.test(line)) continue;
+        bad.push(`${f}: ${line.trim().slice(0, 70)}`);
+      }
+    }
+  }
+  check('workflow: walang umaasa sa executable bit', bad.length === 0, bad.join(' | '));
+}
+
+/* ---------- 3e. ang orasan ay may higit sa isang alarma ---------- */
+// Sa public repo, ang scheduled workflow ng GitHub ay nahuhuli nang ilang oras
+// at minsan hindi na tumatakbo. Noong Agosto 27 ay lumipas ang 6 AM nang
+// walang anuman. Tatlong alarma ngayon, at may guard laban sa dobleng post.
+{
+  const wfDir = path.join(__dirname, '..', '.github', 'workflows');
+  const daily = path.join(wfDir, 'daily-post.yml');
+  const make  = path.join(wfDir, 'make-post.yml');
+
+  if (fs.existsSync(daily)) {
+    const crons = (fs.readFileSync(daily, 'utf8').match(/^\s*- cron:/gm) || []).length;
+    check('orasan: higit sa isang alarma', crons >= 2, `${crons} cron`);
+    check('orasan: naipapasa ang skip_if_exists',
+          /skip_if_exists:\s*\$\{\{\s*github\.event_name == 'schedule'/
+            .test(fs.readFileSync(daily, 'utf8')));
+  }
+  if (fs.existsSync(make)) {
+    const txt = fs.readFileSync(make, 'utf8');
+    check('make-post: may guard laban sa dobleng post',
+          /steps\.guard\.outputs\.skip/.test(txt) && /docs\/posts\/\$SLUG\.json/.test(txt));
+    // Bawat mabigat na hakbang ay dapat may guard — kung may nakalimutan,
+    // tatakbo pa rin ito kahit dapat huminto na.
+    const guarded = (txt.match(/if: steps\.guard\.outputs\.skip != 'true'/g) || []).length;
+    check('make-post: may guard ang lahat ng hakbang', guarded >= 7, `${guarded} na naka-guard`);
+  }
+}
+
+/* ---------- 3f. hindi dapat makalabas ang isang sample ---------- */
+// Agosto 27: isang --dry na post ang nailabas sa Facebook. Walang paraan ang
+// publisher para malaman na sample lang iyon, at walang babala ang issue.
+// Tatlong harang ngayon, at bawat isa ay may test.
+{
+  const { execFileSync: run } = require('child_process');
+  const tmp = '/tmp/dry-check';
+  fs.mkdirSync(tmp, { recursive: true });
+
+  // (a) may `dry` ba sa post.json ng isang --dry na takbo?
+  try {
+    run('node', [path.join(__dirname, 'generate.js'), '--dry', '--out-dir', tmp,
+                 '--date', '2026-08-27'], { stdio: 'pipe' });
+    const post = JSON.parse(fs.readFileSync(path.join(tmp, 'post.json'), 'utf8'));
+    check('sample: nakatala sa post.json', post.dry === true, `dry=${post.dry}`);
+  } catch (e) {
+    check('sample: nakatala sa post.json', false, String(e.message).slice(0, 120));
+  }
+
+  // (b) tumatanggi ba ang publisher?
+  const dryPost = path.join(tmp, 'dry.json');
+  fs.writeFileSync(dryPost, JSON.stringify({ dry: true, caption: 'x', base: '2026-08-27' }));
+  let refused = false, why = '';
+  try {
+    run('node', [path.join(__dirname, 'publish.js'), '--post', dryPost,
+                 '--image-url', 'https://example.com/a.jpg'],
+        { stdio: 'pipe',
+          env: { ...process.env, FB_PAGE_TOKEN: 'x', FB_PAGE_ID: 'y', IG_USER_ID: 'z' } });
+  } catch (e) {
+    refused = true;
+    why = String(e.stderr || '');
+  }
+  check('sample: tumatanggi ang publisher', refused && /SAMPLE/.test(why),
+        why.trim().slice(0, 90));
+
+  // (c) may babala ba ang issue?
+  const bodyDry = run('node', [path.join(__dirname, 'issue-body.js'),
+                               '--post', dryPost, '--image-url', 'http://x/y.jpg'],
+                      { encoding: 'utf8' });
+  check('sample: may babala sa itaas ng issue',
+        bodyDry.startsWith('> [!CAUTION]') && /huwag i-post/i.test(bodyDry));
+
+  // (d) at walang babala kapag totoo
+  const realPost = path.join(tmp, 'real.json');
+  fs.writeFileSync(realPost, JSON.stringify({ caption: 'x', base: '2026-08-27' }));
+  const bodyReal = run('node', [path.join(__dirname, 'issue-body.js'),
+                                '--post', realPost, '--image-url', 'http://x/y.jpg'],
+                       { encoding: 'utf8' });
+  check('totoo: walang babala', !/CAUTION/.test(bodyReal) && bodyReal.startsWith('!['));
+
+  // (e) may marka ba ang pamagat?
+  const wfDir = path.join(__dirname, '..', '.github', 'workflows');
+  for (const f of ['make-post.yml', 'showcase-post.yml']) {
+    const txt = fs.readFileSync(path.join(wfDir, f), 'utf8');
+    check(`sample: may marka ang pamagat (${f})`,
+          /SAMPLE, huwag i-post/.test(txt) && /inputs\.dry.*=.*"true"|"\$\{\{ inputs\.dry \}\}" = "true"/s.test(txt));
+  }
+}
+
+/* ---------- 3g. ang index para sa dashboard ---------- */
+{
+  const { execFileSync: run } = require('child_process');
+  const root = path.join('/tmp', 'idx-test');
+  fs.rmSync(root, { recursive: true, force: true });
+  fs.mkdirSync(path.join(root, 'docs', 'posts'), { recursive: true });
+  fs.cpSync(__dirname, path.join(root, 'bot'), { recursive: true });
+
+  const write = (base, extra = {}) => {
+    fs.writeFileSync(path.join(root, 'docs/posts', base + '.json'),
+      JSON.stringify({ base, slug: base.slice(0, 10), subject: 'craft',
+                       angle: 'x', variant: 'tips', paper: 'kraft',
+                       caption: 'y', ...extra }));
+    if (!extra.noImage) fs.writeFileSync(path.join(root, 'docs/posts', base + '.jpg'), 'x');
+  };
+  write('2026-08-25');
+  write('2026-08-26');
+  write('2026-08-27', { dry: true });          // sample — dapat wala sa index
+  write('2026-08-24', { noImage: true });      // walang larawan — dapat wala rin
+
+  run('node', [path.join(root, 'bot', 'index-posts.js')], { stdio: 'pipe' });
+  const idx = JSON.parse(fs.readFileSync(path.join(root, 'docs/posts/index.json'), 'utf8'));
+  const bases = idx.posts.map(p => p.base);
+
+  check('index: kasama ang totoong post', bases.includes('2026-08-25') && bases.includes('2026-08-26'));
+  check('index: hindi kasama ang sample', !bases.includes('2026-08-27'));
+  check('index: hindi kasama ang walang larawan', !bases.includes('2026-08-24'));
+  check('index: bago ang nasa itaas', bases[0] === '2026-08-26', bases.join(','));
+  check('index: may caption ang bawat isa', idx.posts.every(p => 'caption' in p));
+}
+
+/* ---------- 3h. ang dashboard: caption sa textContent, hindi innerHTML ---------- */
+{
+  // Galing sa AI ang caption. Noong isang beses, muntik itong dumaan sa
+  // innerHTML — sapat na iyon para tumakbo ang kahit anong markup na naisulat
+  // ng modelo. Dito nahuhuli kung may nagbalik nito nang hindi sinasadya.
+  const html = fs.readFileSync(path.join(__dirname, '..', 'docs', 'admin.html'), 'utf8');
+
+  check('admin: caption sa pamamagitan ng textContent',
+        /\.cap'\)\.textContent\s*=/.test(html));
+
+  // Bawal ang hubad na ${caption} o ${p.caption} sa loob ng template — bilang
+  // lang ang pinapayagan, tulad ng ${caption.length}.
+  const bare = [...html.matchAll(/\$\{\s*(?:p\.)?caption\s*\}/g)];
+  check('admin: walang hubad na caption sa markup', bare.length === 0,
+        bare.map(m => m[0]).join(' '));
+
+  check('admin: may harang bago ang laman',
+        /PASS_HASH\s*=\s*'[0-9a-f]{64}'/.test(html));
 }
 
 /* ---------- 4. end-to-end: lahat ng variant, lahat ng papel ---------- */

@@ -48,10 +48,12 @@ Wala ni isang hakbang na nangangailangan ng serverong gising.
 .github/workflows/
   daily-post.yml     ← 6 AM. Ang orasan lang.
   make-post.yml      ← Ang totoong paggawa. Ginagamit ng dalawa.
+  showcase-post.yml  ← Ikaw ang nagpapatakbo. Totoong gawa.
   publish-post.yml   ← Ang sagot mo: post / skip and generate / skip.
 
 bot/
   content.js         ← 6 pillars, 121 angles, ang system prompt. DITO mag-edit.
+  showcase.js        ← totoong gawa: larawan mo + maikling kuwento → post
   validate.js        ← ang 11 guardrails
   generate.js        ← pick → Gemini → validate → design.json
   publish.js         ← Facebook at Instagram
@@ -119,11 +121,35 @@ Kapag ayos na, patakbuhin ulit nang walang `dry`.
 
 ```bash
 cd render && npm ci && cd ..
-node bot/test.js        # 41 na test
+node bot/test.js        # 50 na test
 ./bot/route.test.sh     # 26 na kaso ng utos
 ```
 
 Dapat lahat ✓ bago mag-push.
+
+---
+
+## Showcase — totoong gawa
+
+Hindi ito bahagi ng araw-araw na ikot. Walang AI na makakaimbento ng totoong
+trabaho, kaya ikaw ang nagbibigay ng larawan at ng maikling kuwento.
+
+1. Ilagay ang larawan sa `assets/showcase/` at i-commit
+2. **Actions → Showcase post → Run workflow**
+3. `images`: `assets/showcase/hero.png,assets/showcase/countdown.png`
+   (hanggang tatlo — ang **una** ang mapupunta sa gitna)
+4. `brief`: ano ang nasa larawan, sa sarili mong salita
+5. `paper`: cream, kraft, o chalk
+
+Bubuksan nito ang parehong approval issue. Mag-comment ng `post` o `skip`.
+Kung ayaw mo sa pagkakasulat, patakbuhin ulit na may parehong `images` at
+taasan ang `variation`.
+
+**Bago ka kumuha ng screenshot: gawin mo sa incognito window.** Kapag naka-sign
+in ka sa Google, lumalabas ang email mo sa mga naka-embed na Google Form.
+Nahuli namin ito minsan sa RSVP section ng isang kliyente — nasa Facebook na
+sana ang email kung hindi napansin. Nasa `assets/showcase/README.md` ang buong
+listahan ng dapat tingnan.
 
 ---
 
@@ -150,6 +176,13 @@ mag-iiba ang itsura ng post mo. Naka-base64 lahat.
 Kayang mag-imbento ng AI ng presyo, testimonial, at istatistika nang buong
 kumpiyansa. Mas mabuti nang walang post ngayong araw kaysa sa isang post na
 nagsisinungaling para sa negosyo mo.
+
+**Bakit hiwalay ang showcase sa araw-araw?**
+Ang araw-araw ay may 121 angle na kayang magpatakbo ng sarili nito magpakailanman.
+Ang showcase ay nangangailangan ng bagay na wala ang makina: isang bagay na
+totoong ginawa mo. Kung isinama natin ito sa ikot, mauubusan ito at
+mag-iimbento — at iyon mismo ang pinakamasamang pwedeng mangyari sa isang post
+na ang buong halaga ay ang pagiging totoo.
 
 **Bakit deterministic ang pagpili?**
 Dahil kayang subukan ang deterministic na sistema. Alam natin kung ano ang

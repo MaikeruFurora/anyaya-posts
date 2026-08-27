@@ -44,6 +44,17 @@ async function graph(pathname, params, label) {
   }
 
   const post = JSON.parse(fs.readFileSync(arg('--post', '/tmp/post/post.json'), 'utf8'));
+
+  // Ang huling harang. Kahit ma-approve ito nang aksidente, hindi ito
+  // makakalabas. Mas mabuting mabigo nang maingay kaysa mag-post ng sample
+  // sa totoong page.
+  if (post.dry) {
+    throw new Error(
+      'SAMPLE ito, hindi totoong post. Ginawa ito na may naka-check na "dry", ' +
+      'kaya halimbawang teksto lang ang laman at hindi ito tinawagan sa Gemini. ' +
+      'Patakbuhin ulit nang WALANG dry para sa totoong post.');
+  }
+
   const imageUrl = arg('--image-url');
   if (!imageUrl) throw new Error('Walang --image-url.');
 
