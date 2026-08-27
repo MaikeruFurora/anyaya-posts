@@ -222,6 +222,8 @@ h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:42px
       <a class="btn" href="https://business.facebook.com/latest/composer"
          target="_blank" rel="noopener">Business Suite &#8599;</a>
       <a class="btn" id="runLink" target="_blank" rel="noopener">New post &#8599;</a>
+      <a class="btn" id="showcaseLink" target="_blank" rel="noopener"
+         title="Real work — your own screenshot or photo of a printed card">Showcase &#8599;</a>
       <button id="lock" title="Lock this dashboard">Lock</button>
     </div>
   </header>
@@ -271,7 +273,7 @@ h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:42px
  *   node -e "console.log(require('crypto').createHash('sha256').update('BAGONG-PASSWORD').digest('hex'))"
  * at ipalit ang lumabas sa PASS_HASH sa ibaba.
  * ------------------------------------------------------------------------- */
-const PASS_HASH = '0e52155bdc4974f235f76ba4915862150d7ea910c3ad99e40803ddb3e625ad8a';
+const PASS_HASH = '5cd53e4c836396273b2f730807a758306e35c1287fa8f671793df712346f980b';
 const UNLOCK_KEY = 'anyaya.unlock.v1';
 
 const gate = document.getElementById('gate');
@@ -347,8 +349,11 @@ const onPages = location.hostname.endsWith('github.io');
 const repoSlug = onPages
   ? `${location.hostname.split('.')[0]}/${location.pathname.split('/').filter(Boolean)[0] || ''}`
   : FALLBACK_REPO;
-document.getElementById('runLink').href =
-  `https://github.com/${repoSlug}/actions/workflows/daily-post.yml`;
+const actions = f => `https://github.com/${repoSlug}/actions/workflows/${f}`;
+document.getElementById('runLink').href = actions('daily-post.yml');
+// Hiwalay ang showcase: ikaw ang nagbibigay ng larawan, walang iniimbento
+// ang AI. Kailangan mo munang i-commit ang litrato sa assets/showcase/.
+document.getElementById('showcaseLink').href = actions('showcase-post.yml');
 
 const grid = document.getElementById('grid');
 const emptyEl = document.getElementById('empty');

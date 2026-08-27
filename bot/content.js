@@ -115,7 +115,7 @@ const PILLARS = {
   3: { name: 'Product Showcase',   variants: ['feature'],           perWeek: 1, slot: 0 },
   4: { name: 'Objection Handling', variants: ['compare', 'quote'],  perWeek: 1, slot: 0 },
   5: { name: 'Engagement',         variants: ['question'],          perWeek: 1, slot: 0 },
-  6: { name: 'Educate / Tips',     variants: ['tips'],              perWeek: 2, slot: 1 },
+  6: { name: 'Educate / Tips',     variants: ['stat', 'tips'],      perWeek: 2, slot: 1 },
   0: { name: 'Offer / CTA',        variants: ['cta'],               perWeek: 1, slot: 0 },
 };
 
@@ -337,7 +337,14 @@ function pick(when = new Date(), variation = 0) {
   // Ang normal na araw ay sumusunod sa disenyong itinakda para sa pillar.
   // Ang pang-ulit ay lumalabas doon at kumukuha sa buong pitong disenyo —
   // kung hindi, dalawa lang ang paikot-ikot at pareho ang itsura ng v1 at v3.
-  const occurrence = week * pillar.perWeek + pillar.slot;
+  // Dating `week * perWeek + slot`. Para sa Martes (perWeek 2, slot 0) ay
+  // `week * 2` iyon — laging even, kaya laging `variants[0]`. Hindi
+  // kailanman naabot ang `stat` sa loob ng dalawang taon, gayong buhay ito
+  // sa renderer at may test na nagre-render nito.
+  //
+  // `week + slot` ang tama: umuusad nang tig-isa, at ang slot ang nagsasalit
+  // sa Martes at Sabado — kaya isang `tips` at isang `stat` kada linggo.
+  const occurrence = week + pillar.slot;
   const first = pillar.variants[occurrence % pillar.variants.length];
   const variant = v === 0
     ? first
