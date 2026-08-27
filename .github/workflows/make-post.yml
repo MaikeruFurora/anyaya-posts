@@ -22,6 +22,11 @@ on:
         type: boolean
         required: false
         default: false
+      skip_if_exists:
+        description: 'Huminto nang tahimik kung may post na ngayong araw.'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -34,7 +39,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Bago ang kahit anong mabigat: may post na ba ngayong araw?
+      # Ito ang nagpapaligtas sa tatlong alarma — kung pumutok na ang una,
+      # tahimik na huhupa ang pangalawa at pangatlo.
+      - name: May post na ba ngayong araw?
+        id: guard
+        run: |
+          SLUG="${{ inputs.date }}"
+          [ -z "$SLUG" ] && SLUG=$(TZ=Asia/Manila date +%F)
+          echo "Araw: $SLUG"
+          if [ "${{ inputs.skip_if_exists }}" = "true" ] && [ -f "docs/posts/$SLUG.json" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "May post na para sa $SLUG. Hindi na uulit."
+            echo "### ⏭️ May post na para sa $SLUG" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Nauna nang pumutok ang isa sa mga alarma. Walang ginawa." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.guard.outputs.skip != 'true'
         with:
           node-version: '20'
           cache: npm
@@ -44,17 +69,20 @@ jobs:
       # natin ito para hindi ito ulitin araw-araw — at para hindi tayo
       # nakasalalay sa isang download tuwing umaga.
       - name: Kunin ang naka-imbak na Chrome
+        if: steps.guard.outputs.skip != 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cache/puppeteer
           key: puppeteer-${{ runner.os }}-${{ hashFiles('render/package-lock.json') }}
 
       - name: I-install ang renderer
+        if: steps.guard.outputs.skip != 'true'
         working-directory: render
         run: npm ci
 
       - name: Isulat ang post
         id: gen
+        if: steps.guard.outputs.skip != 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL:   ${{ vars.GEMINI_MODEL }}
@@ -67,6 +95,7 @@ jobs:
           echo "slug=$(node -p "require('/tmp/post/post.json').slug")" >> "$GITHUB_OUTPUT"
 
       - name: Gawing larawan
+        if: steps.guard.outputs.skip != 'true'
         run: |
           mkdir -p docs/posts
           node render/render.js \
@@ -74,15 +103,21 @@ jobs:
             --out "docs/posts/${{ steps.gen.outputs.base }}.jpg"
 
       - name: I-commit ang larawan at ang caption
+        if: steps.guard.outputs.skip != 'true'
         run: |
           # Kasama ang post.json: ito ang babasahin kapag nag-approve ka.
           # Walang database — ang repo mismo ang tala.
           cp /tmp/post/post.json "docs/posts/${{ steps.gen.outputs.base }}.json"
 
+          # Hindi kayang maglista ng folder ang GitHub Pages, kaya tayo na ang
+          # gumagawa ng listahan. Ito ang binabasa ng docs/admin.html.
+          node bot/index-posts.js
+
           git config user.name  'anyaya-bot'
           git config user.email 'anyaya-bot@users.noreply.github.com'
           git add "docs/posts/${{ steps.gen.outputs.base }}.jpg" \
-                  "docs/posts/${{ steps.gen.outputs.base }}.json"
+                  "docs/posts/${{ steps.gen.outputs.base }}.json" \
+                  docs/posts/index.json
           git commit -m "Post para sa ${{ steps.gen.outputs.base }}" || {
             echo "Walang pagbabago."; exit 0; }
 
@@ -93,6 +128,7 @@ jobs:
           done
 
       - name: Hintayin ang GitHub Pages
+        if: steps.guard.outputs.skip != 'true'
         run: |
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           REPO="${{ github.event.repository.name }}"
@@ -112,6 +148,7 @@ jobs:
           exit 1
 
       - name: Buksan ang approval issue
+        if: steps.guard.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -121,7 +158,11 @@ jobs:
 
           # Ang pamagat ang nagdadala ng pangalan ng file. Ito ang binabasa ng
           # publish workflow — walang ibang tala na kailangang panatilihin.
+          # Nananatili ang "Post para sa " sa unahan para gumana pa rin ang skip.
           TITLE="Post para sa ${{ steps.gen.outputs.base }} — approve?"
+          if [ "${{ inputs.dry }}" = "true" ]; then
+            TITLE="Post para sa ${{ steps.gen.outputs.base }} — SAMPLE, huwag i-post"
+          fi
 
           gh label create "pending-approval" --color "d4a373" \
             --description "Naghihintay ng sagot mo" 2>/dev/null || true

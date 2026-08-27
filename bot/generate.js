@@ -134,6 +134,10 @@ const dryFor = variant => ({
   fs.writeFileSync(path.join(outDir, 'design.json'), JSON.stringify(out.design, null, 2));
   fs.writeFileSync(path.join(outDir, 'post.json'), JSON.stringify({
     ...ctx,
+    // Ang bandilang ito ang pumipigil sa isang sample na makarating sa
+    // Facebook. Noong Agosto 27, isang --dry na post ang nailabas dahil
+    // walang paraan ang publisher para malaman kung sample lang ito.
+    dry: has('--dry'),
     caption: out.caption,
     captionOnly: out.captionOnly,
     hashtags: out.hashtags,

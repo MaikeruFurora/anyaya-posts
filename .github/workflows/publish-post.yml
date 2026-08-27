@@ -40,7 +40,12 @@ jobs:
           TITLE: ${{ github.event.issue.title }}
         run: |
           # Nasa bot/route.sh ang logic — hindi dito. Ganoon lang ito
-          # masusubok: `bot/route.test.sh` ang nagpapatakbo ng 26 na kaso.
+          # masusubok: `bot/route.test.sh` ang nagpapatakbo ng mga kaso.
+          #
+          # `bash bot/route.sh`, hindi `bot/route.sh`. Nawawala ang executable
+          # bit kapag ang file ay dumaan sa zip at Windows bago ma-commit —
+          # at ang lumalabas ay exit code 126, na walang sinasabi tungkol sa
+          # tunay na dahilan. Hindi tayo aasa sa file mode.
           OUT=$(bash bot/route.sh "$BODY" "$TITLE")
           echo "$OUT"
           echo "$OUT" >> "$GITHUB_OUTPUT"
@@ -94,6 +99,22 @@ jobs:
           else
             gh issue comment "$NUM" --body "$(printf 'Hindi nailabas.\n\n```\n%s\n```\n\nNaiwang bukas ang issue — mag-comment ulit ng `post` kapag naayos na.' "$OUT")"
           fi
+
+  # Ikaw mismo ang nag-post sa Meta Business Suite. Isasara natin ito nang
+  # may tamang tala — hindi ito nilaktawan, nailabas ito.
+  manual:
+    needs: route
+    if: needs.route.outputs.action == 'manual'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Isara bilang nailabas
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$NUM" --body "Nailabas mo mismo. Tala lang ito — walang tinawagan na API."
+          gh issue close "$NUM" --reason "completed"
+          gh issue edit "$NUM" --add-label "manual" 2>/dev/null || true
 
   skip:
     needs: route

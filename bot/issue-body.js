@@ -17,7 +17,21 @@ const SERBISYO = { rsvp: 'RSVP website', craft: 'Craft invitation cards' };
 // at ganito rin ang itsura sa email ng GitHub.
 const quoted = post.caption.split('\n').map(l => '> ' + l).join('\n');
 
-process.stdout.write(`![post](${img})
+// Kapag sample, ang babala ang unang bagay na makikita — sa issue at sa
+// email. Dating walang pinagkaiba ang itsura ng sample at ng totoo.
+const warn = post.dry ? [
+  '> [!CAUTION]',
+  '> **SAMPLE lang ito — huwag i-post.**',
+  '>',
+  '> Ginawa ito na may naka-check na `dry`, kaya halimbawang teksto ang laman.',
+  '> Hindi ito tinawagan sa Gemini at walang kinalaman sa negosyo mo.',
+  '>',
+  '> Kahit mag-comment ka ng `post`, tatanggi ang publisher. I-`skip` mo na lang',
+  '> ito, tapos patakbuhin ulit nang **walang** `dry`.',
+  '', '',
+].join('\n') : '';
+
+process.stdout.write(`${warn}![post](${img})
 
 ${quoted}
 
@@ -41,6 +55,7 @@ Mag-comment ng isa sa mga ito:
 | I-comment | Mangyayari |
 |---|---|
 | \`post\` | Ilalabas sa Facebook at Instagram |
+| \`posted\` | Ikaw mismo ang nag-post — isasara lang ang issue |
 | \`skip and generate\` | Gagawa ng **bagong** post ngayong araw — ibang angle, ibang disenyo, ibang papel |
 | \`skip\` | Laktawan ang araw na ito |
 
