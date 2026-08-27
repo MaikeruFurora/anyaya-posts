@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { pick, geminiBody, ANGLES } = require('./content');
+const { pick, geminiBody, ANGLES, ALL_VARIANTS } = require('./content');
 const { validate } = require('./validate');
 
 let fail = 0;
@@ -144,6 +144,40 @@ check('slug format YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(at('2026-08-23T06:00:
   rows.forEach(r => { papers[r.paper] = (papers[r.paper] || 0) + 1; });
   const spread = Math.max(...Object.values(papers)) - Math.min(...Object.values(papers));
   check('taon: pantay ang papel sa tatlong taon', spread <= 1, JSON.stringify(papers));
+}
+
+/* ---------- 1d. walang disenyong namamatay ---------- */
+{
+  // Pito ang disenyo sa ALL_VARIANTS. Anim lang ang lumalabas noon: ang
+  // Martes ay `week * 2` kaya laging even ang occurrence, kaya laging
+  // variants[0]. Dalawang taon na walang `stat` kahit isang beses — buhay
+  // sa renderer, may test na nagre-render nito, pero walang nakakakita.
+  const days = 730;
+  const rows = [];
+  for (let d = 0; d < days; d++) {
+    rows.push(at(new Date(Date.UTC(2026, 0, 1 + d, 6, 0, 0)).toISOString()));
+  }
+
+  const tally = {};
+  rows.forEach(r => { tally[r.variant] = (tally[r.variant] || 0) + 1; });
+  const missing = ALL_VARIANTS.filter(v => !tally[v]);
+  check('disenyo: lahat ng pito ay lumalabas', missing.length === 0,
+        missing.length ? 'wala: ' + missing.join(', ') : JSON.stringify(tally));
+
+  // Walang dapat lumampas nang doble sa pinakakaunti — kung hindi, may
+  // isang disenyong halos hindi na rin nakikita.
+  const counts = Object.values(tally);
+  check('disenyo: walang lumalamang nang doble',
+        Math.max(...counts) <= Math.min(...counts) * 2,
+        `pinakamarami ${Math.max(...counts)}, pinakakaunti ${Math.min(...counts)}`);
+
+  let sameVariant = 0, samePaper = 0;
+  for (let d = 1; d < days; d++) {
+    if (rows[d].variant === rows[d - 1].variant) sameVariant++;
+    if (rows[d].paper === rows[d - 1].paper) samePaper++;
+  }
+  check('disenyo: walang magkasunod na magkaparehong disenyo', sameVariant === 0, `${sameVariant} pares`);
+  check('papel: walang magkasunod na magkaparehong papel', samePaper === 0, `${samePaper} pares`);
 }
 
 /* ---------- 2. ang request sa Gemini ---------- */
