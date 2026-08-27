@@ -26,6 +26,9 @@ ang meron ka.
 10. `02-jedsteph-story.jpg`
 11. `06-jedsteph-faq.jpg`
 12. `07-jedsteph-rsvp.jpg`
+13. `13-jedsteph-attire.jpg`
+14. `14-jedsteph-hero.jpg`
+15. `15-jedsteph-countdown.jpg`
 
 ---
 
@@ -241,6 +244,66 @@ There is a deadline on the page too, and it does not move.
 Message us your event date and we will show you what yours could look like.
 
 #WeddingPH #DebutPH #WeddingPlanning #RSVPWebsite #DigitalInvitation #WeddingInvitation #PhilippineWeddings #PinoyWedding #WeddingSupplierPH #AnyayaDesigns
+```
+
+---
+
+## 13-jedsteph-attire
+
+`13-jedsteph-attire.jpg`
+
+```
+The attire question always arrives in a group chat, usually at night, usually from a tita who wants to be sure she will not clash with the principal sponsors.
+
+Jed and Steph put the whole guide on the page instead. Every role, from the ninongs down to the little bearers, each one with its shade sitting right beside it. Nobody has to squint at a colour name and hope.
+
+Guests check it themselves, on their own time, as many times as they need. The couple stopped answering the same question in eleven separate threads.
+
+We build the page around what your event actually needs. Attire, entourage, timeline, gifts, RSVP.
+
+Message us your event date and we will show you what yours could look like.
+
+#WeddingPH #DebutPH #WeddingPlanning #RSVPWebsite #DigitalInvitation #WeddingAttire #PhilippineWeddings #PinoyWedding #WeddingSupplierPH #AnyayaDesigns
+```
+
+---
+
+## 14-jedsteph-hero
+
+`14-jedsteph-hero.jpg`
+
+```
+Half your guests will open the invitation on a laptop at work. The other half on a phone, one hand on the rail of a jeepney.
+
+Same link, same page, and it fits itself to whatever screen it lands on. Nothing to download, nothing to install, no app asking anyone to sign in before it will show a church address.
+
+Jed and Steph sent one link. That was the whole distribution plan.
+
+The story, the venue, the timeline, and the RSVP all sit behind that same address, so there is only ever one thing to send, and one thing to correct if something moves.
+
+Message us your event date and we will show you what yours could look like.
+
+#WeddingPH #DebutPH #WeddingPlanning #RSVPWebsite #DigitalInvitation #WeddingInvitation #PhilippineWeddings #PinoyWedding #WeddingSupplierPH #AnyayaDesigns
+```
+
+---
+
+## 15-jedsteph-countdown
+
+`15-jedsteph-countdown.jpg`
+
+```
+The number moves by itself. Twenty nine days when we took this, twenty eight tomorrow, and nobody has to remember to change it.
+
+That sounds small until you have watched a couple redraw a graphic at midnight because the old one still said sixty days. The page reads the wedding date once and does the arithmetic forever.
+
+Under the count sits the ceremony time and the full date, for the guests who want the plain details instead of the drama.
+
+Jed and Steph are getting married in September. Their guests can watch it come closer without having to ask anybody.
+
+Message us your event date and we will show you what yours could look like.
+
+#WeddingPH #DebutPH #WeddingPlanning #RSVPWebsite #DigitalInvitation #WeddingCountdown #PhilippineWeddings #PinoyWedding #WeddingSupplierPH #AnyayaDesigns
 ```
 
 ---
