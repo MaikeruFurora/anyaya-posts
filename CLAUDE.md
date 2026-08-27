@@ -16,6 +16,10 @@ Sinusulat ng AI, may branded na disenyo, at ang may-ari ang nag-a-approve.
 **GitHub Actions lang ang tumatakbo** — walang server, walang database.
 
 - Repo: `anyaya-posts` (public) · Pages mula sa `/docs`
+- **Dashboard: https://maikerufurora.github.io/anyaya-posts/admin.html**
+  May password. Nasa `PASS_HASH` sa `docs/admin.html` ang hash, at nasa
+  komento roon kung paano ito palitan. Huwag isulat dito ang password —
+  public ang repo na ito.
 - Website: anyayadesigns.github.io/flow
 - Runbook: https://claude.ai/code/artifact/43cd4bc5-f566-4f5a-848a-01056954763a
 
