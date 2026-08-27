@@ -25,6 +25,25 @@ Walang server. Walang database. Walang bayad.
           "Publish post" — Facebook + Instagram
 ```
 
+## Ang dashboard
+
+**https://maikerufurora.github.io/anyaya-posts/admin.html**
+
+Dito mo kinukuha ang larawan at ang caption. May password — nasa `PASS_HASH`
+sa `docs/admin.html` ang hash, at nasa komento roon kung paano ito palitan.
+Hindi ito nakasulat dito: public ang repo.
+
+| | |
+|---|---|
+| Pindutin ang larawan | Lumalaki. Pindutin ulit para mag-zoom sa 1080px. |
+| **Download image** | Ang JPEG, handa nang i-upload |
+| **Copy caption** | Ang teksto, handa nang i-paste |
+| **Posted** | Tickmark. Nasa browser mo lang ito, walang server. |
+| `/` | Puntahan ang search |
+
+Hangga't tulog ang Meta API, dito dumadaan ang totoong pagpo-post: kunin ang
+larawan at ang caption dito, tapos i-paste sa Meta Business Suite.
+
 ## Ang tatlong sagot mo
 
 | I-comment | Mangyayari |
