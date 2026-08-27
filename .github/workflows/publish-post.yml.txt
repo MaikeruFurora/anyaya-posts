@@ -1,0 +1,166 @@
+# Ang sagot mo sa approval issue.
+#
+#   post                → ilalabas sa Facebook at Instagram
+#   skip and generate   → bagong post ngayong araw, ibang angle at disenyo
+#   skip                → laktawan ang araw
+#
+# Seguridad: ikaw lang — ang may-ari ng repo — ang sinusunod. Publiko ang
+# repo, kaya kahit sino ay makakapag-comment. Sinusuri natin ang username
+# bago gumalaw kahit ano.
+name: Publish post
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  route:
+    if: >
+      !github.event.issue.pull_request &&
+      github.event.comment.user.login == github.repository_owner &&
+      startsWith(github.event.issue.title, 'Post para sa ')
+    runs-on: ubuntu-latest
+    outputs:
+      action:    ${{ steps.cmd.outputs.action }}
+      kind:      ${{ steps.cmd.outputs.kind }}
+      base:      ${{ steps.cmd.outputs.base }}
+      date:      ${{ steps.cmd.outputs.date }}
+      variation: ${{ steps.cmd.outputs.variation }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Basahin ang utos at ang pamagat
+        id: cmd
+        env:
+          BODY:  ${{ github.event.comment.body }}
+          TITLE: ${{ github.event.issue.title }}
+        run: |
+          # Nasa bot/route.sh ang logic — hindi dito. Ganoon lang ito
+          # masusubok: `bot/route.test.sh` ang nagpapatakbo ng mga kaso.
+          #
+          # `bash bot/route.sh`, hindi `bot/route.sh`. Nawawala ang executable
+          # bit kapag ang file ay dumaan sa zip at Windows bago ma-commit —
+          # at ang lumalabas ay exit code 126, na walang sinasabi tungkol sa
+          # tunay na dahilan. Hindi tayo aasa sa file mode.
+          OUT=$(bash bot/route.sh "$BODY" "$TITLE")
+          echo "$OUT"
+          echo "$OUT" >> "$GITHUB_OUTPUT"
+
+          ACTION=$(echo "$OUT" | grep '^action=' | cut -d= -f2)
+          BASE=$(echo "$OUT" | grep '^base=' | cut -d= -f2)
+          if [ "$ACTION" != "none" ] && [ -z "$BASE" ]; then
+            echo "::error::Walang petsa sa pamagat ng issue."; exit 1
+          fi
+
+  publish:
+    needs: route
+    if: needs.route.outputs.action == 'post'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Ilabas sa Facebook at Instagram
+        id: pub
+        env:
+          FB_PAGE_TOKEN:  ${{ secrets.FB_PAGE_TOKEN }}
+          FB_PAGE_ID:     ${{ secrets.FB_PAGE_ID }}
+          IG_USER_ID:     ${{ secrets.IG_USER_ID }}
+          FB_API_VERSION: ${{ vars.FB_API_VERSION }}
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO="${{ github.event.repository.name }}"
+          BASE="${{ needs.route.outputs.base }}"
+          IMG="https://$OWNER.github.io/$REPO/posts/$BASE.jpg"
+
+          if [ ! -f "docs/posts/$BASE.json" ]; then
+            echo "::error::Wala ang docs/posts/$BASE.json — hindi mabasa ang caption."
+            exit 1
+          fi
+          node bot/publish.js --post "docs/posts/$BASE.json" --image-url "$IMG"
+
+      - name: Sagutin ang issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          OUT=$(cat /tmp/publish-result.txt 2>/dev/null || echo 'walang detalye')
+          if [ "${{ steps.pub.outcome }}" = "success" ]; then
+            gh issue comment "$NUM" --body "$(printf 'Nailabas na.\n\n```\n%s\n```' "$OUT")"
+            gh issue close "$NUM" --reason "completed"
+          else
+            gh issue comment "$NUM" --body "$(printf 'Hindi nailabas.\n\n```\n%s\n```\n\nNaiwang bukas ang issue — mag-comment ulit ng `post` kapag naayos na.' "$OUT")"
+          fi
+
+  skip:
+    needs: route
+    if: needs.route.outputs.action == 'skip'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Isara ang issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$NUM" --body "Nilaktawan. Walang ipinost ngayong araw."
+          gh issue close "$NUM" --reason "not planned"
+
+  # ---- skip and generate -------------------------------------------------
+  # Isasara muna ang luma, tsaka gagawa ng bago. Ganito ang pagkakasunod para
+  # hindi ka makakita ng dalawang bukas na issue para sa parehong araw.
+  close-old:
+    needs: route
+    if: needs.route.outputs.action == 'regen' && needs.route.outputs.kind == 'daily'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Isara ang luma
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$NUM" --body "Sige — gagawa ako ng bago. Ibang angle, ibang disenyo, ibang papel. Ilang minuto lang."
+          gh issue close "$NUM" --reason "not planned"
+
+  regen:
+    needs: [route, close-old]
+    if: needs.route.outputs.action == 'regen' && needs.route.outputs.kind == 'daily'
+    uses: ./.github/workflows/make-post.yml
+    secrets: inherit
+    with:
+      date:      ${{ needs.route.outputs.date }}
+      variation: ${{ fromJSON(needs.route.outputs.variation) }}
+      dry:       false
+
+  # Ang showcase ay may larawang ikaw ang pumili. Hindi ito kayang ulitin ng
+  # isang comment — walang paraan para malaman ng workflow kung parehong
+  # larawan pa rin ang gusto mo. Sinasabi na lang natin kung ano ang gagawin.
+  regen-showcase:
+    needs: route
+    if: needs.route.outputs.action == 'regen' && needs.route.outputs.kind == 'showcase'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ituro ang tamang daan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          # Walang heredoc dito: ang laman nito ay dapat naka-indent sa loob
+          # ng YAML block, at kinakain ng heredoc ang indentation.
+          {
+            echo "Totoong gawa ito, kaya hindi ko ito kayang ulitin mula rito — ikaw ang"
+            echo "pumili ng larawan, at hindi ko alam kung iyon pa rin ang gusto mo."
+            echo ""
+            echo "Ganito ang gawin: **Actions → Showcase post → Run workflow**, parehong"
+            echo "\`images\`, tapos taasan ang \`variation\` ng isa. Bagong sulat, parehong larawan."
+            echo ""
+            echo "Naiwang bukas ang issue na ito. Isara mo kapag napalitan na."
+          } > /tmp/reply.md
+          gh issue comment "$NUM" --body-file /tmp/reply.md
