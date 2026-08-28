@@ -599,13 +599,30 @@ genBtn.addEventListener('click', generateNow);
 /* ---------- ang sagot sa approval issue ---------- */
 const approvals = document.getElementById('approvals');
 
+/* Natutulog ang Meta API.
+ *
+ * Development Mode ang app, at kulang pa ang business verification. Ang laman
+ * na ginawa habang Development Mode ay nakikita lang ng mga role user —
+ * kumpirmado sa incognito. Ang `post` ay tumatawag sa bot/publish.js, kaya
+ * mukhang tumatagumpay ito habang walang ibang nakakakita.
+ *
+ * Kaya wala ito rito. Manu-mano muna: kunin ang larawan at ang caption sa
+ * ibaba, ipasok sa Business Suite, tapos pindutin ang "Mark posted" — iyon
+ * ang `manual` sa route.sh, na nagsasara lang ng issue nang walang tawag sa
+ * Meta.
+ *
+ * Ang araw na matapos ang verification, gawing true ito. Buhay pa rin ang
+ * `post` sa route.sh at sa publish-post.yml — natutulog lang sila. */
+const META_LIVE = false;
+
 // Ito ang parehong salitang binabasa ng bot/route.sh sa comment.
 const ANSWERS = [
-  ['post', 'Post it', 'Publish to Facebook and Instagram'],
-  ['posted', 'Mark posted', 'You already posted it by hand'],
+  ...(META_LIVE ? [['post', 'Publish now', 'Send it to Facebook and Instagram']] : []),
+  ['posted', 'Mark posted', 'You put it on Business Suite yourself — close this'],
   ['skip and generate', 'Write another', 'Same pillar, different angle and design'],
   ['skip', 'Skip today', 'No post for this day'],
 ];
+const PRIMARY = META_LIVE ? 'post' : 'posted';
 
 async function loadApprovals() {
   if (!readToken()) { approvals.hidden = true; return; }
@@ -620,7 +637,10 @@ async function loadApprovals() {
 
   document.getElementById('approvalNote').textContent =
     `${open.length} post ${open.length === 1 ? 'is' : 'are'} waiting. ` +
-    'Answering here is the same as commenting on the issue.';
+    (META_LIVE
+      ? 'Answering here is the same as commenting on the issue.'
+      : 'Download the image and copy the caption below, put it on Business Suite, ' +
+        'then mark it posted.');
 
   const list = document.getElementById('approvalList');
   list.replaceChildren(...open.map(issue => {
@@ -637,7 +657,7 @@ async function loadApprovals() {
       const b = document.createElement('button');
       b.textContent = label;
       b.title = why;
-      if (word === 'post') b.className = 'act';
+      if (word === PRIMARY) b.className = 'act';
       b.addEventListener('click', async () => {
         const buttons = [...row.querySelectorAll('button')];
         buttons.forEach(x => { x.disabled = true; });

@@ -579,6 +579,36 @@ for (const [label, patch] of mustFail) {
   global.__httpTest = run().then(() => results.forEach(a => check(...a)));
 }
 
+/* ---------- 3j. hindi inaalok ng dashboard ang natutulog na `post` ---------- */
+{
+  // Ang `post` ay tumatawag sa bot/publish.js at sa Meta API. Development
+  // Mode pa ang app, kaya ang lumalabas ay nakikita lang ng mga role user —
+  // mukhang tumatagumpay habang walang ibang nakakakita.
+  //
+  // Isang beses itong naging pinakaprominenteng pindutan sa dashboard. Ang
+  // tamang pindutan araw-araw ay `posted`: isinasara nito ang issue nang
+  // walang tawag sa Meta, matapos mong ilagay ito sa Business Suite mismo.
+  const html = fs.readFileSync(path.join(__dirname, '..', 'docs', 'admin.html'), 'utf8');
+
+  const live = /const META_LIVE = (true|false);/.exec(html);
+  check('dashboard: may bandila para sa Meta', !!live, live ? live[1] : 'wala');
+
+  if (live && live[1] === 'false') {
+    // Nasa loob ng ternary ang `post`, kaya hindi ito naiaalok habang tulog.
+    check('dashboard: nakakandado ang `post` sa likod ng bandila',
+          /META_LIVE \? \[\['post'/.test(html));
+    check('dashboard: `posted` ang pinakaprominente',
+          /const PRIMARY = META_LIVE \? 'post' : 'posted';/.test(html));
+  }
+
+  // Anuman ang bandila, ang apat na salita ay dapat kilala ng route.sh.
+  const route = fs.readFileSync(path.join(__dirname, 'route.sh'), 'utf8');
+  const words = [...html.matchAll(/\['(post|posted|skip and generate|skip)',/g)].map(m => m[1]);
+  const unknown = words.filter(w => !route.includes(w.split(' ')[0]));
+  check('dashboard: kilala ng route.sh ang lahat ng sagot', unknown.length === 0,
+        unknown.join(', ') || words.join(' · '));
+}
+
 /* ---------- 4. end-to-end: lahat ng variant, lahat ng papel ---------- */
 const SHAPES = {
   quote:   { variant:'quote', headline:'One strong *statement* here', body:'A short line underneath.' },
