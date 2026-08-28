@@ -87,10 +87,22 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL:   ${{ vars.GEMINI_MODEL }}
         run: |
+          # pipefail: kung wala nito, ang exit code ng `tee` ang nakikita —
+          # laging zero — at dadaan ang pagbagsak na parang tagumpay.
+          set -o pipefail
           ARGS="--out-dir /tmp/post --variation ${{ inputs.variation }}"
           [ -n "${{ inputs.date }}" ] && ARGS="$ARGS --date ${{ inputs.date }}"
           [ "${{ inputs.dry }}" = "true" ] && ARGS="$ARGS --dry"
-          node bot/generate.js $ARGS
+          if ! node bot/generate.js $ARGS 2>&1 | tee /tmp/gen.log; then
+            {
+              echo "### ❌ Hindi nagawa ang post"
+              echo ""
+              echo '```'
+              tail -20 /tmp/gen.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
           echo "base=$(node -p "require('/tmp/post/post.json').base")" >> "$GITHUB_OUTPUT"
           echo "slug=$(node -p "require('/tmp/post/post.json').slug")" >> "$GITHUB_OUTPUT"
 
