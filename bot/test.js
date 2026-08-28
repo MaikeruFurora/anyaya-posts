@@ -193,6 +193,44 @@ check('slug format YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(at('2026-08-23T06:00:
   check('gemini: valid JSON ang buong body', typeof JSON.parse(JSON.stringify(b)) === 'object');
 }
 
+/* ---------- 2b. ang muling pagsulat kapag tinanggihan ---------- */
+{
+  // Isang draft lang ang hinihingi noon. Noong 2026-08-28, tumama ang
+  // "Nagbukas ang caption sa tanong" at wala nang post sa buong araw —
+  // gayong ang kailangan lang ay sabihin sa modelo kung ano ang nasira.
+  //
+  // Biyernes ang pinakamadalas: question ang variant, at tanong din ang
+  // angle. Halos hinihila ang modelo sa mismong ipinagbabawal.
+  const friday = at('2026-08-28T06:00:00Z');
+  const first = JSON.stringify(geminiBody(friday));
+  const again = JSON.stringify(geminiBody(friday, 'Nagbukas ang caption sa tanong.'));
+
+  check('prompt: Biyernes ay question variant', friday.variant === 'question', friday.pillar);
+  check('prompt: hiwalay ang tuntunin ng disenyo at ng caption',
+        first.includes('The CAPTION may not'));
+  check('prompt: walang note ang unang draft',
+        !first.includes('rejected your previous'));
+  check('prompt: dala ng ikalawang draft ang dahilan ng pagtanggi',
+        again.includes('rejected your previous draft') && again.includes('Nagbukas'));
+
+  // Ang mga halimbawang laman ng --dry ay dapat dumaan sa guardrails —
+  // kung hindi, hindi na masusubok ang buong daloy nang walang AI.
+  const { execFileSync: run } = require('child_process');
+  const dir = path.join(require('os').tmpdir(), 'dry-check');
+  let dryOk = true, why = '';
+  for (const d of ['2026-08-28', '2026-08-29', '2026-08-30', '2026-08-31',
+                   '2026-09-01', '2026-09-02', '2026-09-03']) {
+    try {
+      run('node', [path.join(__dirname, 'generate.js'),
+                   '--out-dir', dir, '--date', d, '--dry'], { stdio: 'pipe' });
+    } catch (e) {
+      dryOk = false; why = d + ': ' + String(e.stderr || e.message).slice(0, 90);
+      break;
+    }
+  }
+  check('dry: pumasa ang pitong araw sa guardrails', dryOk, why);
+}
+
 /* ---------- 3. ang guardrails ---------- */
 const goodEnglish =
   'It is ten in the evening and you are counting again. Yesterday you were sure ' +

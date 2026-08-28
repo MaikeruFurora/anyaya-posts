@@ -107,24 +107,47 @@ const dryFor = variant => ({
   console.log(`Variant : ${ctx.variant}   Papel: ${ctx.paper}   Hugis: ${ctx.shape}`);
   if (ctx.variation) console.log(`Ulit    : #${ctx.variation + 1} — file ${ctx.base}`);
 
-  let g;
-  if (has('--dry')) {
-    g = dryFor(ctx.variant);
-    console.log('(--dry: hindi tinawagan ang Gemini)');
-  } else {
+  // Isang draft lang ang hinihingi noon. Kapag tumama ang kahit isa sa 11
+  // guardrail, wala nang post sa buong araw — kahit ang kailangan lang ay
+  // ipaalam sa modelo kung ano ang nasira. Nangyari ito noong 2026-08-28:
+  // "Nagbukas ang caption sa tanong", at hindi na natuloy.
+  //
+  // Tatlong draft ngayon, at ipinapasa ang dahilan ng pagtanggi sa susunod.
+  const DRAFTS = 3;
+
+  async function draft(rejected) {
+    if (has('--dry')) {
+      if (!rejected) console.log('(--dry: hindi tinawagan ang Gemini)');
+      return dryFor(ctx.variant);
+    }
     const key = process.env.GEMINI_API_KEY;
     if (!key) throw new Error('Walang GEMINI_API_KEY.');
-    const res = await callGemini(geminiBody(ctx), key);
+    const res = await callGemini(geminiBody(ctx, rejected), key);
     const text = res?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) throw new Error('Walang teksto sa sagot ng Gemini: ' + JSON.stringify(res).slice(0, 400));
     try {
-      g = JSON.parse(text);
+      return JSON.parse(text);
     } catch (e) {
       throw new Error('Hindi mabasa ang JSON ng Gemini: ' + e.message);
     }
   }
 
-  const out = validate(g, ctx);
+  let out, rejected;
+  for (let attempt = 1; attempt <= DRAFTS; attempt++) {
+    const g = await draft(rejected);
+    try {
+      out = validate(g, ctx);
+      if (attempt > 1) console.log(`(tinanggap ang draft ${attempt})`);
+      break;
+    } catch (e) {
+      rejected = e.message;
+      console.error(`   draft ${attempt} tinanggihan — ${e.message}`);
+      // Ang --dry ay laging iisa ang laman, kaya walang saysay ulitin.
+      if (attempt === DRAFTS || has('--dry')) {
+        throw new Error(`Tinanggihan ang ${has('--dry') ? 1 : DRAFTS} draft. Huli: ${e.message}`);
+      }
+    }
+  }
 
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'design.json'), JSON.stringify(out.design, null, 2));

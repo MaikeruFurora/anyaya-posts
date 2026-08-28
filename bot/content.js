@@ -370,7 +370,13 @@ function pick(when = new Date(), variation = 0) {
 /* Ang request papuntang Gemini                                         */
 /* ------------------------------------------------------------------ */
 
-function geminiBody(p) {
+/**
+ * @param {object} p        ang galing sa pick()
+ * @param {string} rejected ang dahilan ng pagtanggi sa naunang draft, kung meron.
+ *   Ibinabalik natin ito sa modelo. Kung hindi, uulitin lang nito ang parehong
+ *   mali — at sa 11 guardrail, ang isang tama ay wala nang post sa buong araw.
+ */
+function geminiBody(p, rejected) {
   const focus = p.subject === 'craft'
     ? 'the PRINTED CRAFT INVITATION CARDS. Write about paper, ink, and the object in a hand. Mention the RSVP website once at most, and only if the angle asks for it.'
     : 'the LIVE RSVP WEBSITE. Mention the printed cards once at most, and only if the angle asks for it.';
@@ -384,7 +390,17 @@ function geminiBody(p) {
       '\nDesign variant to use: ' + p.variant +
       '\nCaption shape to use: ' + p.shape +
       '\n\nWrite one post. Use exactly the variant and the caption shape given. ' +
-      'Do not substitute either.' }] }],
+      'Do not substitute either.' +
+      // Ang question variant ay nag-uutos ng tanong sa DISENYO, at binabasa
+      // ito ng modelo bilang pahintulot na magbukas din ng tanong ang caption
+      // — na tinatanggihan ng guardrail. Tuwing Biyernes iyon. Kaya hiwalay
+      // na sinasabi rito ang dalawa.
+      '\n\nThe DESIGN may ask a question. The CAPTION may not: its first ' +
+      'sentence is a statement, never a question.' +
+      (rejected
+        ? '\n\nAn automated check rejected your previous draft: ' + rejected +
+          '\nWrite a new one that does not do that. Everything else stays the same.'
+        : '') }] }],
     generationConfig: {
       temperature: 1.0,
       responseMimeType: 'application/json',
