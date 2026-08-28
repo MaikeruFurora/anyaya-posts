@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { pick, geminiBody } = require('./content');
 const { validate } = require('./validate');
+const { fetchRetry } = require('./http');
 
 const arg = (flag, fallback) => {
   const i = process.argv.indexOf(flag);
@@ -27,29 +28,24 @@ const MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 async function callGemini(body, key) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
-  // Tatlong subok. Ang 429 at 5xx ay panandalian; ang 400 at 404 ay hindi —
-  // walang saysay ulitin ang mali.
-  let last;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+  // Inuulit ng fetchRetry ang 429, ang 5xx, at ang hindi pagkarating ng
+  // request. Ibinabalik nito ang 400, 403, at 404 — walang saysay ulitin
+  // ang mali.
+  const res = await fetchRetry(url, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }, {
+    onRetry: (n, why) => console.error(`   subok ${n} — ${why.slice(0, 160)}`),
+  }).catch(e => { throw new Error('Hindi naabot ang Gemini: ' + e.message); });
 
-    if (res.ok) return res.json();
+  if (res.ok) return res.json();
 
-    const text = await res.text();
-    last = `HTTP ${res.status} — ${text.slice(0, 500)}`;
-
-    // Kapag naretiro ang modelo, sinasabi mismo ng Google kung ano ang kapalit.
-    // Nangyari ito noong Agosto at tatlong araw kaming bulag. Ilalabas natin
-    // nang buo ang mensahe para hindi na maulit iyon.
-    if (res.status === 400 || res.status === 403 || res.status === 404) break;
-
-    if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 5000));
-  }
-  throw new Error('Hindi tumugon ang Gemini: ' + last);
+  // Kapag naretiro ang modelo, sinasabi mismo ng Google kung ano ang kapalit.
+  // Nangyari ito noong Agosto at tatlong araw kaming bulag. Ilalabas natin
+  // nang buo ang mensahe para hindi na maulit iyon.
+  const text = await res.text();
+  throw new Error(`Hindi tumugon ang Gemini: HTTP ${res.status} — ${text.slice(0, 500)}`);
 }
 
 // Halimbawang laman para sa --dry: isa kada variant, para totoong nasusubok

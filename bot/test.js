@@ -463,6 +463,84 @@ for (const [label, patch] of mustFail) {
         /PASS_HASH\s*=\s*'[0-9a-f]{64}'/.test(html));
 }
 
+/* ---------- 3i. ang fetch na may ulit ---------- */
+{
+  // Noong 2026-08-27, tatlong run ang bumagsak sa iisang mensahe: "fetch
+  // failed". Nasa labas ng try ang await fetch(...), kaya ang pagkaputol ng
+  // network ay tumatalon palabas agad — zero na ulit, gayong iyon mismo ang
+  // pinakadapat ulitin. At itinatago ng Node sa error.cause ang tunay na
+  // dahilan, kaya walang masabi ang mensahe.
+  //
+  // Lokal na server lang ang ginagamit dito. Walang internet, gaya ng iba.
+  const http = require('http');
+  const { fetchRetry, describe } = require('./http');
+  const results = [];
+
+  const withServer = (handler, fn) => new Promise(resolve => {
+    const srv = http.createServer(handler);
+    srv.listen(0, '127.0.0.1', async () => {
+      const url = `http://127.0.0.1:${srv.address().port}/`;
+      let out;
+      try { out = await fn(url); } catch (e) { out = { threw: e }; }
+      srv.close(() => resolve(out));
+    });
+  });
+
+  const run = async () => {
+    // 1. Ang 500 ay inuulit, at kapag gumaling ay tumutuloy.
+    let hits = 0;
+    let r = await withServer((q, s) => {
+      hits++;
+      if (hits < 3) { s.writeHead(500); return s.end('nasira'); }
+      s.writeHead(200, { 'Content-Type': 'application/json' });
+      s.end('{"ok":true}');
+    }, url => fetchRetry(url, {}, { backoffMs: 5 }));
+    results.push(['http: inuulit ang 500 hanggang gumaling',
+                  !r.threw && r.status === 200 && hits === 3, `${hits} subok`]);
+
+    // 2. Ang 400 ay hindi inuulit — ibinabalik para basahin ng tumawag.
+    hits = 0;
+    r = await withServer((q, s) => { hits++; s.writeHead(400); s.end('mali'); },
+                         url => fetchRetry(url, {}, { backoffMs: 5 }));
+    results.push(['http: hindi inuulit ang 400',
+                  !r.threw && r.status === 400 && hits === 1, `${hits} subok`]);
+
+    // 3. Ang hindi pagkarating ng request ay inuulit din — ito ang butas noon.
+    //    Sarado na ang server, kaya tiyak na hindi ito maaabot.
+    let tries = 0;
+    const dead = await withServer(() => {}, url => url);
+    r = await fetchRetry(dead, {}, { backoffMs: 5, onRetry: () => tries++ })
+      .then(x => ({ res: x })).catch(e => ({ threw: e }));
+    results.push(['http: inuulit ang hindi makarating na request',
+                  !!r.threw && tries === 2, `${tries} ulit`]);
+
+    // 4. Nasa mensahe ang tunay na dahilan, hindi lang "fetch failed".
+    const msg = r.threw ? r.threw.message : '';
+    results.push(['http: nasa mensahe ang dahilan, hindi "fetch failed" lang',
+                  /ECONN|ENOTFOUND|EADDR|refused|socket/i.test(msg), msg.slice(0, 90)]);
+
+    // 5. Ang nakabiting koneksyon ay may hangganan.
+    const t0 = Date.now();
+    r = await withServer(() => { /* hindi sumasagot kailanman */ },
+                         url => fetchRetry(url, {}, { attempts: 1, timeoutMs: 300 })
+                           .then(x => ({ res: x })).catch(e => ({ threw: e })));
+    results.push(['http: may timeout ang nakabiting koneksyon',
+                  !!r.threw && Date.now() - t0 < 5000, `${Date.now() - t0} ms`]);
+
+    // 6. Binubuksan ng describe ang buong kadena ng cause.
+    const e = new Error('fetch failed');
+    e.cause = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' });
+    const d = describe(e);
+    results.push(['http: binubuksan ng describe ang cause',
+                  d.includes('fetch failed') && d.includes('ECONNREFUSED'), d]);
+  };
+
+  // Ang test file ay sunod-sunod, kaya hinihintay natin ito bago magpatuloy.
+  // Sunod-sunod ang test file na ito; ito lang ang bahaging async. Hinihintay
+  // ito ng huling ulat sa ibaba bago lumabas.
+  global.__httpTest = run().then(() => results.forEach(a => check(...a)));
+}
+
 /* ---------- 4. end-to-end: lahat ng variant, lahat ng papel ---------- */
 const SHAPES = {
   quote:   { variant:'quote', headline:'One strong *statement* here', body:'A short line underneath.' },
@@ -555,5 +633,14 @@ if (!hasRenderer) {
   }
 }
 
-console.log(fail === 0 ? '\n🎉 Lahat pumasa.' : `\n⚠️  ${fail} na bumagsak.`);
-process.exit(fail ? 1 : 0);
+const report = () => {
+  console.log(fail === 0 ? '\n🎉 Lahat pumasa.' : `\n⚠️  ${fail} na bumagsak.`);
+  process.exit(fail ? 1 : 0);
+};
+
+// Hintayin ang mga test na hindi kayang tapusin nang sunod-sunod.
+if (global.__httpTest) {
+  global.__httpTest.then(report, e => { check('http: tumakbo', false, e.message); report(); });
+} else {
+  report();
+}
