@@ -8,6 +8,7 @@
  * Content Publishing API. Kaya nasa GitHub Pages ang larawan.
  */
 const fs = require('fs');
+const { fetchRetry } = require('./http');
 
 const arg = (flag, fallback) => {
   const i = process.argv.indexOf(flag);
@@ -23,19 +24,18 @@ async function graph(pathname, params, label) {
   const url = `https://graph.facebook.com/${V}/${pathname}`;
   const form = new URLSearchParams({ ...params, access_token: TOKEN });
 
-  let last;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    const res = await fetch(url, { method: 'POST', body: form });
-    const text = await res.text();
-    if (res.ok) {
-      try { return JSON.parse(text); } catch { return { raw: text }; }
-    }
-    last = `HTTP ${res.status} — ${text.slice(0, 400)}`;
-    // Ang 190 ay expired o binawing token. Walang saysay ulitin iyon.
-    if (/"code"\s*:\s*190/.test(text)) break;
-    if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 8000));
+  const res = await fetchRetry(url, { method: 'POST', body: form }, {
+    backoffMs: 8000,
+    onRetry: (n, why) => console.error(`   ${label}: subok ${n} — ${why.slice(0, 160)}`),
+  }).catch(e => { throw new Error(`${label} — hindi naabot ang Meta: ${e.message}`); });
+
+  const text = await res.text();
+  if (res.ok) {
+    try { return JSON.parse(text); } catch { return { raw: text }; }
   }
-  throw new Error(`${label} — ${last}`);
+  // Ang 190 ay expired o binawing token — hindi ito inuulit ng fetchRetry
+  // dahil 400 ang dala nito. Ang mensahe ang nagsasabi kung ano ang gagawin.
+  throw new Error(`${label} — HTTP ${res.status} — ${text.slice(0, 400)}`);
 }
 
 (async () => {

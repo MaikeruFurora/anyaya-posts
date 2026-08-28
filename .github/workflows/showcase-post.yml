@@ -75,10 +75,20 @@ jobs:
           IMAGES: ${{ inputs.images }}
           BRIEF:  ${{ inputs.brief }}
         run: |
+          set -o pipefail
           ARGS="--out-dir /tmp/post --paper ${{ inputs.paper }} --variation ${{ inputs.variation }}"
           ARGS="$ARGS --frame ${{ inputs.frame }} --blur-below ${{ inputs.blur_below }}"
           [ "${{ inputs.dry }}" = "true" ] && ARGS="$ARGS --dry"
-          node bot/showcase.js --images "$IMAGES" --brief "$BRIEF" $ARGS
+          if ! node bot/showcase.js --images "$IMAGES" --brief "$BRIEF" $ARGS 2>&1 | tee /tmp/gen.log; then
+            {
+              echo "### ❌ Hindi nagawa ang showcase post"
+              echo ""
+              echo '```'
+              tail -20 /tmp/gen.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
           echo "base=$(node -p "require('/tmp/post/post.json').base")" >> "$GITHUB_OUTPUT"
 
       - name: Gawing larawan
