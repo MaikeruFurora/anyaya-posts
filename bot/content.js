@@ -397,6 +397,13 @@ function geminiBody(p, rejected) {
       // na sinasabi rito ang dalawa.
       '\n\nThe DESIGN may ask a question. The CAPTION may not: its first ' +
       'sentence is a statement, never a question.' +
+      // Ang unang linya lang ang nababasa. Sa Instagram ay ~125 titik bago
+      // ang "... more"; sa Facebook ay ~480. Walang saysay ang magandang
+      // ikatlong talata kung walang nakarating doon.
+      '\n\nMost readers see only the first line before the platform cuts it ' +
+      'off. Make that line able to stand on its own, under 120 characters, ' +
+      'and worth stopping for. Keep the whole caption between 40 and 110 ' +
+      'words: shorter is better when the point is already made.' +
       (rejected
         ? '\n\nAn automated check rejected your previous draft: ' + rejected +
           '\nWrite a new one that does not do that. Everything else stays the same.'

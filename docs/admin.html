@@ -273,6 +273,12 @@ h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:42px
     <span class="hint" id="hint"></span>
   </div>
 
+  <section class="strip warn" id="todayStrip" hidden>
+    <h2>Nothing for today yet</h2>
+    <p id="todayNote"></p>
+    <div class="row"><button class="act" id="todayGen">New post</button></div>
+  </section>
+
   <section class="strip" id="runStrip" hidden aria-live="polite">
     <h2 id="runTitle">Working</h2>
     <p id="runNote"></p>
@@ -844,6 +850,38 @@ function applyFilter() {
   paintChrome();
 }
 
+/* Ang orasan ng GitHub ay hindi maaasahan sa public repo.
+ *
+ * Ang tatlong alarma ay iisang pila, kaya sabay silang nahuhuli. Noong
+ * 2026-08-28, ang 22:00 UTC ay tumakbo ng 05:59 — walong oras ang huli, at
+ * ang 00:45 ay labing-isa't kalahating oras. Kinabukasan ay wala ni isa.
+ *
+ * Wala tayong kontrol doon. Ang kaya nating gawin ay ipaalam sa iyo, para
+ * hindi mo ito malaman sa hapon. */
+const manilaToday = () => {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date());
+  } catch { return ''; }
+};
+
+function paintToday() {
+  const today = manilaToday();
+  const strip = document.getElementById('todayStrip');
+  if (!today || !posts.length) { strip.hidden = true; return; }
+
+  const has = posts.some(p => p.slug === today && p.subject !== 'showcase');
+  strip.hidden = has;
+  if (has) return;
+
+  document.getElementById('todayNote').textContent =
+    `No daily post for ${today}. The schedule on GitHub often runs hours late, ` +
+    'or not at all. Press this and it runs now.';
+}
+
+document.getElementById('todayGen').addEventListener('click', () => {
+  document.getElementById('gen').click();
+});
+
 function paintChrome() {
   const todo = posts.reduce((n, p) => n + (done.has(p.base) ? 0 : 1), 0);
   document.getElementById('nTodo').textContent = todo;
@@ -912,7 +950,7 @@ function load() {
 
   fetch('posts/index.json', { cache: 'no-store' })
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
-    .then(d => { posts = d.posts || []; applyFilter(); })
+    .then(d => { posts = d.posts || []; applyFilter(); paintToday(); })
     .catch(err => {
       grid.replaceChildren();
       filtered = [];

@@ -34,8 +34,24 @@ function validate(g, ctx) {
   const emojis = (g.caption.match(/\p{Extended_Pictographic}/gu) || []).length;
   if (emojis > 3) throw new Error(`Sobrang emoji sa caption (${emojis})`);
 
-  const words = g.caption.trim().split(/\s+/).length;
-  if (words < 45 || words > 170) throw new Error(`Haba ng caption: ${words} salita`);
+  // Ang 170 ay masyadong maluwag. Sa 17 post na nagawa, 15 ang lumampas sa
+  // 480 titik — ang puntong pinuputol ng Facebook sa telepono. Ang Instagram
+  // ay mas maaga pa: ~125 titik bago ang "... more".
+  //
+  // Hindi ito tungkol sa pagiging maikli. Tungkol ito sa kung ano ang tunay
+  // na nababasa.
+  const caption = g.caption.trim();
+  const words = caption.split(/\s+/).length;
+  if (words < 40 || words > 110) throw new Error(`Haba ng caption: ${words} salita (40-110)`);
+
+  // Ang unang pangungusap ang tanging tiyak na mababasa. Ito ang sinusukat,
+  // hindi ang unang linya: may caption na walang line break, at doon ay ang
+  // buong caption ang magiging "unang linya".
+  const opener = (caption.match(/^[^.!?]*[.!?]/) || [caption])[0].trim();
+  if (opener.length > 140) {
+    throw new Error(`Sobrang haba ng unang pangungusap (${opener.length} titik, 140 ang taas). ` +
+                    'Ito lang ang tiyak na mababasa bago ang "See more".');
+  }
 
   // Isang em-dash lang. Ang sunod-sunod na em-dash ay halatang tatak.
   const dashes = (g.caption.match(/—/g) || []).length;
@@ -92,7 +108,7 @@ function validate(g, ctx) {
   if (!tags.some(t => t.toLowerCase() === '#anyayadesigns')) tags.push('#AnyayaDesigns');
 
   const hashtags = tags.slice(0, 12);
-  const captionOnly = g.caption.trim();
+  const captionOnly = caption;
 
   return {
     design,

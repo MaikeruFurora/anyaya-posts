@@ -283,6 +283,48 @@ for (const [label, patch] of mustFail) {
   check(`guardrail humuli ng ${label}`, threw, threw ? '' : 'HINDI NAHULI');
 }
 
+/* ---------- 3a2. ang haba na tunay na nababasa ---------- */
+{
+  // Sa 17 post na nagawa, 15 ang lumampas sa 480 titik — ang puntong
+  // pinuputol ng Facebook sa telepono. Ang Instagram ay ~125 titik lang.
+  // Ang matagal na hangganang 170 salita ay hindi kailanman tumama.
+  const ctx = { paper: 'kraft', variant: 'quote' };
+  const base = { variant: 'quote', headline: 'A line', body: 'Another line', hashtags: ['#x'] };
+  // Maikling pambungad, tapos ang bigat — para ang haba lang ang sinusubok
+  // dito, at hindi ang panuntunan sa unang pangungusap.
+  const words = n => 'A short opener. ' +
+    Array.from({ length: n - 3 }, (_, i) => 'word' + i).join(' ');
+
+  const ok = (caption) => {
+    try { validate({ ...base, caption }, ctx); return true; } catch { return false; }
+  };
+  const why = (caption) => {
+    try { validate({ ...base, caption }, ctx); return ''; } catch (e) { return e.message; }
+  };
+
+  check('haba: tinatanggap ang 40 salita', ok(words(40)));
+  check('haba: tinatanggap ang 110 salita', ok(words(110)));
+  check('haba: tinatanggihan ang 39 salita', !ok(words(39)));
+  check('haba: tinatanggihan ang 111 salita', !ok(words(111)), why(words(111)));
+  check('haba: tinatanggihan na ang dating pinapayagang 170', !ok(words(170)));
+
+  // Ang unang linya ang tanging nakikita bago ang "See more".
+  const longOpener = 'x'.repeat(140) + '. ' + words(50);
+  const shortOpener = 'x'.repeat(137) + '. ' + words(50);
+  check('pambungad: tinatanggihan ang lampas 140 titik', !ok(longOpener), why(longOpener).slice(0, 62));
+  check('pambungad: tinatanggap ang 138 titik', ok(shortOpener), why(shortOpener).slice(0, 62));
+
+  // Ang caption na walang line break ay hindi dapat basta bumagsak — ang
+  // unang pangungusap ang sinusukat, hindi ang buong talata.
+  const noBreaks = 'A tight opening line that works. ' + words(60);
+  check('pambungad: hindi nakadepende sa line break', ok(noBreaks), why(noBreaks).slice(0, 62));
+
+  // Sinasabi ba ng prompt ang dahilan? Kung hindi, hulaan ng modelo.
+  const body = JSON.stringify(geminiBody(at('2026-08-28T06:00:00Z')));
+  check('prompt: sinasabi ang pagputol ng plataporma', body.includes('before the platform cuts'));
+  check('prompt: sinasabi ang 40 hanggang 110', body.includes('between 40 and 110'));
+}
+
 /* ---------- 3b. showcase: totoong gawa ---------- */
 {
   const { showcaseBody } = require('./content');
@@ -326,7 +368,8 @@ for (const [label, patch] of mustFail) {
 
 /* ---------- 3c. frame at blur ---------- */
 {
-  const cap = Array(80).fill('word').join(' ') + '.';
+  // Maikling pambungad: ang unang pangungusap ang sinusukat ng validator.
+  const cap = 'A short opener. ' + Array(60).fill('word').join(' ') + '.';
   const g = { variant: 'showcase', headline: 'x', body: 'y',
               items: ['a', 'b', 'c'], caption: cap, hashtags: ['#a'] };
   const base = { paper: 'cream', imageFile: 'a.png' };
