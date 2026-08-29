@@ -46,21 +46,32 @@ BANNED
   an example or an estimate, or about our own service.
 - Any promise about delivery time or a specific number of days
 
-CAPTION SHAPE — you are given ONE shape. Follow it exactly.
-Do not fall back to hook-body-CTA unless the shape says so.
+CAPTION STRUCTURE — every caption has the same three parts, in this order,
+separated by a blank line. Nothing else. No opening paragraph, no closing
+paragraph, no build-up.
 
-- cold_open   : Start inside a moment already happening, mid-scene. Two short
-                paragraphs. Let the CTA sit as a plain last sentence, no build-up.
-- one_breath  : A single paragraph, 45-70 words. The CTA lives inside it, not
-                on its own line. No paragraph break at all.
-- three_beats : Three short lines, each its own paragraph, like thoughts landing
-                one after another. Then one closing line that turns.
-- plain_answer: Open with the actual question a client asks, in their words
-                and in quotes. Answer it plainly. Stop when it is answered.
-- noticing    : State one specific thing you notice in this work. Then what it
-                means for the reader. Two or three paragraphs, uneven lengths.
+1. ONE sentence. Not two. This is the only line most people will ever see, so
+   it has to carry the whole post by itself. Under 140 characters.
 
-Total 60-140 words. No hashtags inside the caption; they go in their own field.
+2. A list. Three or four lines. Each line starts with the character "·" and a
+   space, holds ONE concrete fact about the work, runs four to ten words, and
+   ends with no punctuation. These are not sentences.
+
+3. One closing line asking for a DM. Name the exact thing they should send —
+   their event date, their motif, their guest count, a photo of their card.
+   Never a bare "DM us" with nothing to send.
+
+You are given ONE shape. It governs how the FIRST SENTENCE lands, and nothing
+else. The list and the DM line stay the same in every shape.
+
+- cold_open   : Begin inside a moment already happening, mid-scene.
+- one_breath  : One long sentence carrying the whole problem without stopping.
+- three_beats : A short sentence with a turn in the middle of it.
+- plain_answer: The actual question a client asks, in quotes, answered inside
+                the same sentence.
+- noticing    : One specific thing you notice in this work, stated flatly.
+
+Total 40-110 words. No hashtags inside the caption; they go in their own field.
 
 HOW TO NOT SOUND LIKE A MACHINE — this matters more than anything above
 Use contractions. Let one sentence be a fragment. Do not make every paragraph
@@ -397,13 +408,12 @@ function geminiBody(p, rejected) {
       // na sinasabi rito ang dalawa.
       '\n\nThe DESIGN may ask a question. The CAPTION may not: its first ' +
       'sentence is a statement, never a question.' +
-      // Ang unang linya lang ang nababasa. Sa Instagram ay ~125 titik bago
-      // ang "... more"; sa Facebook ay ~480. Walang saysay ang magandang
+      // Ang unang pangungusap lang ang nababasa. Sa Instagram ay ~125 titik
+      // bago ang "... more"; sa Facebook ay ~480. Walang saysay ang magandang
       // ikatlong talata kung walang nakarating doon.
-      '\n\nMost readers see only the first line before the platform cuts it ' +
-      'off. Make that line able to stand on its own, under 120 characters, ' +
-      'and worth stopping for. Keep the whole caption between 40 and 110 ' +
-      'words: shorter is better when the point is already made.' +
+      '\n\nMost readers see only the first sentence before the platform cuts ' +
+      'the caption off. Make it stand on its own, under 120 characters, and ' +
+      'worth stopping for. Then the list, then the DM line. Nothing else.' +
       (rejected
         ? '\n\nAn automated check rejected your previous draft: ' + rejected +
           '\nWrite a new one that does not do that. Everything else stays the same.'

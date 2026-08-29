@@ -44,11 +44,14 @@ const DRY = {
   headline: 'Where the **story** goes',
   body: 'How they met, in their own words. The page holds it, so nobody has to retell it.',
   items: ['Their own words', 'Photos', 'One scroll'],
+  // Isang pangungusap, listahan, tapos ang hiling — ang hugis na sinusukat ng
+  // validate.js. Dapat dumaan ito roon gaya ng totoong laman.
   caption:
-    'The invitation goes out and the questions start. What time is the church. ' +
-    'Can I bring my mother.\n\n' +
-    'Those used to land in a group chat at eleven at night, and somebody had to ' +
-    'answer them twice. Now they land on the page instead, where the answer stays put.\n\n' +
+    'The invitation goes out and the same three questions land in the group ' +
+    'chat by eleven that night.\n\n' +
+    '· Church time and venue maps\n' +
+    '· The full timeline, hour by hour\n' +
+    '· Seats held in each guest name\n\n' +
     'Message us your event date and we will show you what yours could look like.',
   hashtags: ['#WeddingPH', '#RSVPWebsite', '#WeddingPlanning', '#PinoyWedding'],
 };

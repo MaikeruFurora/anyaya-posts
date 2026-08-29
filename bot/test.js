@@ -232,14 +232,26 @@ check('slug format YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(at('2026-08-23T06:00:
 }
 
 /* ---------- 3. ang guardrails ---------- */
-const goodEnglish =
-  'It is ten in the evening and you are counting again. Yesterday you were sure ' +
-  'it was a hundred. Tonight there are three new replies buried somewhere in the ' +
-  'group chat and two cancellations you never saw.\n\n' +
-  'The number was never really the problem. There is no single place where every ' +
-  'answer lives, so you keep starting from the beginning.\n\n' +
-  'With a live RSVP page you send one link and the count keeps itself. ' +
-  'Message us your event date and we will show you what it looks like.';
+
+/**
+ * Ang hugis na hinihingi ng validate.js: isang pangungusap, tatlo hanggang
+ * apat na linya ng listahan, at isang hiling na mag-DM.
+ *
+ * Binubuo ito imbes na isulat nang paisa-isa, para ang isang pagbabago sa
+ * hugis ay isang lugar lang ang aayusin at hindi labindalawa.
+ */
+const shaped = ({ opener, bullets, closer, pad = 0 } = {}) => [
+  opener || 'It is ten in the evening and you are counting the replies again.',
+  '',
+  ...(bullets || ['· One link for every guest',
+                  '· The count keeps itself',
+                  '· Replies land in one place']),
+  '',
+  (closer || 'Message us your event date and we will show you what it looks like.') +
+    (pad ? ' ' + Array.from({ length: pad }, (_, i) => 'word' + i).join(' ') + '.' : ''),
+].join('\n');
+
+const goodEnglish = shaped();
 
 const goodTips = {
   variant: 'tips', eyebrow: 'RSVP checklist',
@@ -266,11 +278,11 @@ try {
 
 const mustFail = [
   ['presyo',       { caption: goodEnglish + ' It is 5000 php only.' }],
-  ['jargon',       { caption: goodEnglish.replace('The number', 'Time to unlock the number') }],
+  ['jargon',       { caption: goodEnglish + ' Time to unlock the count.' }],
   ['claim',        { caption: goodEnglish + ' We are the #1 in the Philippines.' }],
   ['testimonial',  { caption: goodEnglish + ' Sabi ni Maria, ang ganda daw.' }],
   ['emoji spam',   { caption: goodEnglish + ' 🎉💚✨🕊️🌿' }],
-  ['sobrang ikli', { caption: 'Message us na.' }],
+  ['sobrang ikli', { caption: shaped({ opener: 'Short.', closer: 'Message us na.' }) }],
   ['AI flip',      { caption: goodEnglish + " It's not a form. It's a whole event page." }],
   ['AI not-just',  { caption: goodEnglish + ' This is not just a website, but a system.' }],
   ['AI filler',    { caption: goodEnglish + " Here's the thing about guest lists." }],
@@ -290,10 +302,15 @@ for (const [label, patch] of mustFail) {
   // Ang matagal na hangganang 170 salita ay hindi kailanman tumama.
   const ctx = { paper: 'kraft', variant: 'quote' };
   const base = { variant: 'quote', headline: 'A line', body: 'Another line', hashtags: ['#x'] };
-  // Maikling pambungad, tapos ang bigat — para ang haba lang ang sinusubok
-  // dito, at hindi ang panuntunan sa unang pangungusap.
-  const words = n => 'A short opener. ' +
-    Array.from({ length: n - 3 }, (_, i) => 'word' + i).join(' ');
+  // Ang pinakapayat na balidong hugis ay sampung salita. Doon nagsisimula,
+  // at ang bigat ay idinudugtong sa huling linya — para ang haba lang ang
+  // sinusubok dito at hindi ang ibang panuntunan.
+  const words = n => shaped({
+    opener: 'Short opener.',
+    bullets: ['· A', '· B', '· C'],
+    closer: 'Message us.',
+    pad: Math.max(0, n - 10),
+  });
 
   const ok = (caption) => {
     try { validate({ ...base, caption }, ctx); return true; } catch { return false; }
@@ -309,20 +326,69 @@ for (const [label, patch] of mustFail) {
   check('haba: tinatanggihan na ang dating pinapayagang 170', !ok(words(170)));
 
   // Ang unang linya ang tanging nakikita bago ang "See more".
-  const longOpener = 'x'.repeat(140) + '. ' + words(50);
-  const shortOpener = 'x'.repeat(137) + '. ' + words(50);
+  const longOpener = shaped({ opener: 'x'.repeat(140) + '.', pad: 25 });
+  const shortOpener = shaped({ opener: 'x'.repeat(137) + '.', pad: 25 });
   check('pambungad: tinatanggihan ang lampas 140 titik', !ok(longOpener), why(longOpener).slice(0, 62));
   check('pambungad: tinatanggap ang 138 titik', ok(shortOpener), why(shortOpener).slice(0, 62));
 
   // Ang caption na walang line break ay hindi dapat basta bumagsak — ang
   // unang pangungusap ang sinusukat, hindi ang buong talata.
-  const noBreaks = 'A tight opening line that works. ' + words(60);
-  check('pambungad: hindi nakadepende sa line break', ok(noBreaks), why(noBreaks).slice(0, 62));
+  // Ang pambungad na may maraming pangungusap sa isang linya ay dapat pa ring
+  // sukatin sa UNANG pangungusap lang, hindi sa buong linya.
+  const packed = shaped({
+    opener: 'A tight opener. Then a second sentence that keeps going and going and going.',
+    pad: 25,
+  });
+  check('pambungad: unang pangungusap ang sinusukat, hindi ang linya',
+        ok(packed), why(packed).slice(0, 62));
 
   // Sinasabi ba ng prompt ang dahilan? Kung hindi, hulaan ng modelo.
   const body = JSON.stringify(geminiBody(at('2026-08-28T06:00:00Z')));
   check('prompt: sinasabi ang pagputol ng plataporma', body.includes('before the platform cuts'));
-  check('prompt: sinasabi ang 40 hanggang 110', body.includes('between 40 and 110'));
+  check('prompt: sinasabi ang 40 hanggang 110', body.includes('Total 40-110 words'));
+  check('prompt: hinihingi ang listahan', body.includes('Each line starts with the character'));
+  check('prompt: hinihingi ang hiling na mag-DM', body.includes('asking for a DM'));
+}
+
+/* ---------- 3a3. ang hugis: pangungusap, listahan, hiling ---------- */
+{
+  // Ang prosa ay nawawala sa ilalim ng "See more". Ang listahan ay nababasa
+  // kahit sa isang sulyap, at ang huling linya ang nagsasabi ng susunod na
+  // hakbang. Tatlong bahagi, laging ganito ang pagkakasunod.
+  const ctx = { paper: 'kraft', variant: 'quote' };
+  const base = { variant: 'quote', headline: 'A line', body: 'Another', hashtags: ['#x'] };
+  const ok = c => { try { validate({ ...base, caption: c }, ctx); return true; } catch { return false; } };
+  const why = c => { try { validate({ ...base, caption: c }, ctx); return ''; } catch (e) { return e.message; } };
+
+  const three = ['· One link for every guest', '· The count keeps itself', '· Replies in one place'];
+
+  check('hugis: tinatanggap ang tatlong linya ng listahan',
+        ok(shaped({ bullets: three })), why(shaped({ bullets: three })).slice(0, 70));
+  check('hugis: tinatanggap ang apat',
+        ok(shaped({ bullets: [...three, '· Nothing to install'] })));
+  check('hugis: tinatanggihan ang dalawa',
+        !ok(shaped({ bullets: three.slice(0, 2) })));
+  check('hugis: tinatanggihan ang lima',
+        !ok(shaped({ bullets: [...three, '· Four', '· Five'] })));
+  check('hugis: tinatanggihan ang purong prosa',
+        !ok('One sentence here. Then another paragraph that just keeps going ' +
+            'without any list at all. Message us your event date.'));
+
+  // Ang huling linya ang nagdadala ng susunod na hakbang.
+  check('hiling: tinatanggihan kapag nagtapos sa listahan',
+        !ok([shaped({ bullets: three }), '· A trailing bullet'].join('\n')));
+  check('hiling: tinatanggihan kapag walang hinihinging ipadala',
+        !ok(shaped({ bullets: three, closer: 'That is how the page works for you.' })));
+  check('hiling: tinatanggap ang "Send us"',
+        ok(shaped({ bullets: three, closer: 'Send us your motif and we will match the paper.', pad: 10 })));
+  check('hiling: tinatanggap ang "DM us"',
+        ok(shaped({ bullets: three, closer: 'DM us your event date and we will show you yours.' })));
+
+  // Ang mahabang linya sa listahan ay pangungusap na, hindi na listahan.
+  const longBullet = '· ' + 'x'.repeat(62);   // isang salita lang ito, kaya may pad sa ibaba
+  check('listahan: tinatanggihan ang lampas 60 titik',
+        !ok(shaped({ bullets: [longBullet, three[1], three[2]], pad: 15 })),
+        why(shaped({ bullets: [longBullet, three[1], three[2]], pad: 15 })).slice(0, 46));
 }
 
 /* ---------- 3b. showcase: totoong gawa ---------- */
@@ -369,7 +435,7 @@ for (const [label, patch] of mustFail) {
 /* ---------- 3c. frame at blur ---------- */
 {
   // Maikling pambungad: ang unang pangungusap ang sinusukat ng validator.
-  const cap = 'A short opener. ' + Array(60).fill('word').join(' ') + '.';
+  const cap = shaped({ pad: 40 });
   const g = { variant: 'showcase', headline: 'x', body: 'y',
               items: ['a', 'b', 'c'], caption: cap, hashtags: ['#a'] };
   const base = { paper: 'cream', imageFile: 'a.png' };

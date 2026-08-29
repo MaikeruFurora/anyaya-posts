@@ -50,11 +50,15 @@ async function callGemini(body, key) {
 
 // Halimbawang laman para sa --dry: isa kada variant, para totoong nasusubok
 // ang variant na pinili ng araw at hindi laging iisa lang.
+// Isang pangungusap, listahan, tapos ang hiling. Ito ang hugis na sinusukat
+// ng validate.js — kaya kailangan itong dumaan doon, gaya ng totoong laman.
 const DRY_CAPTION =
-  'The card sits on the table for a week before anyone opens it properly.\n\n' +
-  'Then someone runs a thumb along the edge and stops. That is the part we ' +
-  'spend the most time on, and the part nobody photographs. It is also the ' +
-  'part that decides whether the card gets kept or thrown.\n\n' +
+  'That slight bump under your thumb is the part nobody photographs, and the ' +
+  'part that decides whether a card gets kept.\n\n' +
+  '· 300gsm textured stock\n' +
+  '· Letterpress you can feel with a thumb\n' +
+  '· Back-of-card QR to your RSVP page\n' +
+  '· Envelopes cut from the same sheet\n\n' +
   'Send us your motif and we will show you the paper that suits it.';
 
 const DRY_TAGS = ['#WeddingPH', '#CraftPaper', '#InvitationCards', '#PinoyWedding'];

@@ -53,6 +53,26 @@ function validate(g, ctx) {
                     'Ito lang ang tiyak na mababasa bago ang "See more".');
   }
 
+  // Tatlong bahagi ang caption: isang pangungusap, isang listahan, at ang
+  // hiling na mag-DM. Ang prosa ay nawawala sa ilalim ng "See more" — ang
+  // listahan ay nababasa kahit sa isang sulyap.
+  const lines = caption.split('\n').map(l => l.trim()).filter(Boolean);
+  const bullets = lines.filter(l => l.startsWith('· '));
+  if (bullets.length < 3 || bullets.length > 4) {
+    throw new Error(`Kailangan ng 3-4 na linya ng listahan na nagsisimula sa "· " ` +
+                    `(mayroong ${bullets.length})`);
+  }
+  const tooLong = bullets.find(l => l.length > 60);
+  if (tooLong) throw new Error(`Sobrang haba ng linya sa listahan: "${tooLong}"`);
+
+  // Ang huling linya ay dapat may hinihinging ipadala. Kung wala, walang
+  // susunod na hakbang ang nakabasa.
+  const closer = lines[lines.length - 1];
+  if (closer.startsWith('· ')) throw new Error('Nagtatapos ang caption sa listahan — walang hiling na mag-DM.');
+  if (!/\b(dm|message|send|tell)\b/i.test(closer)) {
+    throw new Error(`Walang hiling na mag-DM sa huling linya: "${closer.slice(0, 60)}"`);
+  }
+
   // Isang em-dash lang. Ang sunod-sunod na em-dash ay halatang tatak.
   const dashes = (g.caption.match(/—/g) || []).length;
   if (dashes > 1) throw new Error(`Sobrang em-dash sa caption (${dashes})`);
