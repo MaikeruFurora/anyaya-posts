@@ -270,6 +270,7 @@ h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:42px
       <button id="fTodo">To post</button>
       <button id="fDone">Posted</button>
     </div>
+    <button id="refresh" title="Reload the list without reloading the page">Refresh</button>
     <span class="hint" id="hint"></span>
   </div>
 
@@ -943,12 +944,17 @@ document.getElementById('lock').addEventListener('click', () => {
 });
 
 /* ---------- pagkuha ---------- */
-function load() {
-  grid.replaceChildren(...Array.from({ length: 3 }, () => {
-    const s = document.createElement('div'); s.className = 'skel'; return s;
-  }));
+function load({ skeleton = true } = {}) {
+  if (skeleton) {
+    grid.replaceChildren(...Array.from({ length: 3 }, () => {
+      const s = document.createElement('div'); s.className = 'skel'; return s;
+    }));
+  }
 
-  fetch('posts/index.json', { cache: 'no-store' })
+  // Ang cache: 'no-store' ay para sa browser. Ang query ay para sa CDN ng
+  // GitHub Pages — kung wala ito, ang lumang index pa rin ang ibinibigay
+  // nito sa mga unang sandali matapos ang commit.
+  return fetch(`posts/index.json?t=${Date.now()}`, { cache: 'no-store' })
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
     .then(d => { posts = d.posts || []; applyFilter(); paintToday(); })
     .catch(err => {
@@ -959,6 +965,29 @@ function load() {
       emptyEl.textContent = 'Could not read posts/index.json (' + err + ')';
     });
 }
+
+/* ---------- muling pagkuha nang hindi muling binubuksan ang pahina ---------- */
+const refreshBtn = document.getElementById('refresh');
+
+refreshBtn.addEventListener('click', async () => {
+  const before = new Set(posts.map(p => p.base));
+  refreshBtn.disabled = true;
+  refreshBtn.replaceChildren(
+    Object.assign(document.createElement('span'), { className: 'spin' }),
+    document.createTextNode(' Refreshing'));
+
+  try {
+    // Walang skeleton dito: nasa harap mo na ang listahan, at ang biglang
+    // pagkawala nito ay mukhang nasira, hindi mukhang kumukuha.
+    await load({ skeleton: false });
+    await loadApprovals();
+    const added = posts.filter(p => !before.has(p.base)).length;
+    toast(added ? `${added} new post${added === 1 ? '' : 's'}` : 'Up to date');
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = 'Refresh';
+  }
+});
 
 if (remembered() === PASS_HASH) unlock();
 </script>
