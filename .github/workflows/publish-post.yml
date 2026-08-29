@@ -90,6 +90,7 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           NUM: ${{ github.event.issue.number }}
         run: |
           OUT=$(cat /tmp/publish-result.txt 2>/dev/null || echo 'walang detalye')
@@ -110,6 +111,7 @@ jobs:
       - name: Isara bilang nailabas
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           NUM: ${{ github.event.issue.number }}
         run: |
           gh issue comment "$NUM" --body "Nailabas mo mismo. Tala lang ito — walang tinawagan na API."
@@ -124,6 +126,7 @@ jobs:
       - name: Isara ang issue
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           NUM: ${{ github.event.issue.number }}
         run: |
           gh issue comment "$NUM" --body "Nilaktawan. Walang ipinost ngayong araw."
@@ -140,6 +143,7 @@ jobs:
       - name: Isara ang luma
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           NUM: ${{ github.event.issue.number }}
         run: |
           gh issue comment "$NUM" --body "Sige — gagawa ako ng bago. Ibang angle, ibang disenyo, ibang papel. Ilang minuto lang."
@@ -166,6 +170,7 @@ jobs:
       - name: Ituro ang tamang daan
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           NUM: ${{ github.event.issue.number }}
         run: |
           # Walang heredoc dito: ang laman nito ay dapat naka-indent sa loob

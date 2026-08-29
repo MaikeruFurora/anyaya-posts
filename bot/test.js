@@ -473,6 +473,42 @@ for (const [label, patch] of mustFail) {
   check('workflow: walang umaasa sa executable bit', bad.length === 0, bad.join(' | '));
 }
 
+/* ---------- 3d2. alam ni `gh` kung saang repo siya ---------- */
+{
+  // Hinuhulaan ni `gh` ang repo mula sa git remote ng kasalukuyang folder.
+  // Sa job na walang actions/checkout ay walang folder, kaya agad itong
+  // bumabagsak — "failed to determine base repo", dalawang segundo.
+  //
+  // Apat na job ang ganito noong 2026-08-29: manual, skip, close-old, at
+  // regen-showcase. Iyon ang lahat ng pindutan sa dashboard maliban sa isa.
+  // Tahimik ang pagkabigo: nakarating ang comment, pero hindi nagsara ang
+  // issue, at "Some jobs were not successful" lang ang dumating sa email.
+  const dir = path.join(__dirname, '..', '.github', 'workflows');
+  const broken = [];
+
+  for (const file of fs.readdirSync(dir).filter(f => /\.ya?ml$/.test(f))) {
+    const lines = fs.readFileSync(path.join(dir, file), 'utf8').split('\n');
+    let job = null, checkout = false, ghRepo = false, gh = 0;
+
+    const verdict = () => {
+      if (job && gh && !checkout && !ghRepo) broken.push(`${file} · ${job}`);
+    };
+
+    for (const line of lines) {
+      const m = /^  ([a-z][a-z0-9-]*):\s*$/.exec(line);
+      if (m) { verdict(); job = m[1]; checkout = ghRepo = false; gh = 0; continue; }
+      if (!job) continue;
+      if (/actions\/checkout/.test(line)) checkout = true;
+      if (/GH_REPO:/.test(line)) ghRepo = true;
+      if (/^\s+gh\s/.test(line)) gh++;
+    }
+    verdict();
+  }
+
+  check('gh: alam ng bawat job kung saang repo', broken.length === 0,
+        broken.join(' · ') || 'lahat ay may checkout o GH_REPO');
+}
+
 /* ---------- 3e. ang orasan ay may higit sa isang alarma ---------- */
 // Sa public repo, ang scheduled workflow ng GitHub ay nahuhuli nang ilang oras
 // at minsan hindi na tumatakbo. Noong Agosto 27 ay lumipas ang 6 AM nang

@@ -135,6 +135,7 @@ jobs:
       - name: Buksan ang approval issue
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           node bot/issue-body.js \
             --post /tmp/post/post.json \
