@@ -16,27 +16,10 @@ const fs = require('fs');
 const path = require('path');
 const { showcaseBody } = require('./content');
 const { validate } = require('./validate');
-const { fetchRetry } = require('./http');
+const { callGemini } = require('./gemini');
 
 const arg = (f, d) => { const i = process.argv.indexOf(f); return i > -1 && process.argv[i+1] ? process.argv[i+1] : d; };
 const has = f => process.argv.includes(f);
-
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
-
-async function callGemini(body, key) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
-  const res = await fetchRetry(url, {
-    method: 'POST',
-    headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  }, {
-    onRetry: (n, why) => console.error(`   subok ${n} — ${why.slice(0, 160)}`),
-  }).catch(e => { throw new Error('Hindi naabot ang Gemini: ' + e.message); });
-
-  if (res.ok) return res.json();
-  const text = await res.text();
-  throw new Error(`Hindi tumugon ang Gemini: HTTP ${res.status} — ${text.slice(0, 500)}`);
-}
 
 const DRY = {
   variant: 'showcase',

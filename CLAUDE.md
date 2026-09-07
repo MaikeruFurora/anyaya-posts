@@ -37,6 +37,8 @@ Sinusulat ng AI, may branded na disenyo, at ang may-ari ang nag-a-approve.
 bot/
   content.js          6 pillar, 121 angle, ang system prompt. DITO ang laman.
   validate.js         11 guardrail. Nagtatapon ng error — sinasadya iyon.
+  gemini.js           ang tawag sa Gemini. Tatlong modelo, may kapalit.
+  http.js             fetch na may ulit, may timeout, at may bibig.
   generate.js         pick → Gemini → validate → design.json
   showcase.js         larawan mo + maikling kuwento → post
   publish.js          Facebook + Instagram. NAKATULOG — tingnan ang "Meta" sa baba.
@@ -90,6 +92,15 @@ Tatlong harang ngayon: marka sa pamagat, babala sa issue, at tumatanggi ang
 Sa public repo, ang scheduled workflow ng GitHub ay nahuhuli nang ilang oras
 at minsan hindi na tumatakbo. Tatlong cron ngayon, at may guard sa
 `make-post.yml` laban sa dobleng post (`docs/posts/<petsa>.json`).
+
+**Isang modelo ay hindi sapat.**
+Noong Setyembre 7, limang run ang bumagsak sa iisang mensahe: `HTTP 503 — This
+model is currently experiencing high demand.` Walang mali sa hiling, sa susi,
+o sa laman — nabarahan lang ang `gemini-3.6-flash`. Pitong oras itong nagtagal,
+kaya tumama ang lahat ng tatlong alarma sa parehong saradong pinto. Ang ulit sa
+loob ng isang modelo ay walang silbi roon. Tatlong modelo ngayon sa `gemini.js`,
+sunod-sunod. Ang 400 at 403 ay hindi naghahanap ng kapalit — pareho iyon sa
+lahat. Ang 404 at 503 ay naghahanap.
 
 **Huwag ilagay ang logic sa loob ng YAML.**
 Hindi masusubok ang nakabaon sa workflow. Kaya nasa `bot/route.sh` ang pagbasa

@@ -724,6 +724,121 @@ for (const [label, patch] of mustFail) {
   global.__httpTest = run().then(() => results.forEach(a => check(...a)));
 }
 
+/* ---------- 3i2. may kapalit na modelo kapag nabarahan ang una ---------- */
+{
+  // Noong 2026-09-07, limang run ang bumagsak sa iisang mensahe:
+  //
+  //   HTTP 503 — "This model is currently experiencing high demand."
+  //
+  // Pitong oras itong nagtagal, kaya tumama ang lahat ng tatlong alarma sa
+  // parehong saradong pinto. Ang ulit sa loob ng isang modelo ay walang
+  // silbi roon — punuan pa rin ito makalipas ang sampung segundo. Ang
+  // kapalit na modelo ay ibang pila, at doon dumadaan.
+  //
+  // Lokal na server ang Gemini dito. Walang internet, gaya ng iba.
+  const http = require('http');
+  const { callGemini } = require('./gemini');
+  const results = [];
+
+  // Isang server na iba ang isinasagot kada modelo. Nasa path ang pangalan:
+  // /<modelo>:generateContent — kaya alam natin kung sino ang tinawag.
+  const withGemini = (reply, fn) => new Promise(resolve => {
+    const seen = [];
+    const srv = http.createServer((q, s2) => {
+      const model = decodeURIComponent(q.url.slice(1).split(':')[0]);
+      seen.push(model);
+      const r = reply(model);
+      s2.writeHead(r.status, { 'Content-Type': 'application/json' });
+      s2.end(r.body);
+    });
+    srv.listen(0, '127.0.0.1', async () => {
+      const base = `http://127.0.0.1:${srv.address().port}`;
+      let out;
+      try { out = { value: await fn(base) }; } catch (e) { out = { threw: e }; }
+      srv.close(() => resolve({ ...out, seen }));
+    });
+  });
+
+  const busy = { status: 503, body: JSON.stringify({
+    error: { code: 503, status: 'UNAVAILABLE',
+             message: 'This model is currently experiencing high demand.' } }) };
+  const good = m => ({ status: 200, body: JSON.stringify({ sagot: m }) });
+
+  const call = (base, list) =>
+    callGemini({ x: 1 }, 'susi', { base, list, log: () => {} });
+
+  const run = async () => {
+    const three = ['una', 'pangalawa', 'pangatlo'];
+
+    // 1. Nabarahan ang una. Dapat dumaan sa pangalawa, at huwag nang
+    //    tawagan ang pangatlo — natapos na ang trabaho.
+    let r = await withGemini(m => (m === 'una' ? busy : good(m)),
+                             b => call(b, three));
+    results.push(['gemini: dumadaan sa kapalit kapag 503 ang una',
+                  !r.threw && r.value && r.value.sagot === 'pangalawa',
+                  r.threw ? r.threw.message.slice(0, 70) : r.seen.join(' → ')]);
+    results.push(['gemini: hindi na tinatawagan ang pangatlo kapag tapos na',
+                  !r.seen.includes('pangatlo'), r.seen.join(' → ')]);
+
+    // 2. Sarado ang lahat. Dapat bumagsak, at dapat nasa mensahe ang 503 —
+    //    iyon ang tanging paraan para malaman ito ng may-ari sa summary.
+    r = await withGemini(() => busy, b => call(b, three));
+    const msg = r.threw ? r.threw.message : '';
+    results.push(['gemini: bumabagsak kapag sarado ang lahat', !!r.threw]);
+    results.push(['gemini: nasa mensahe ang 503 at ang huling modelo',
+                  msg.includes('503') && msg.includes('pangatlo'), msg.slice(0, 80)]);
+    results.push(['gemini: sinubukan ang lahat ng tatlo',
+                  new Set(r.seen).size === 3, r.seen.join(' → ')]);
+
+    // 3. Ang 400 ay mali ang hiling — pareho iyon sa lahat ng modelo. Sayang
+    //    lang ang oras, at itinatago pa nito ang tunay na dahilan sa likod
+    //    ng dalawa pang pagkabigo.
+    r = await withGemini(() => ({ status: 400, body: '{"error":"masama ang hiling"}' }),
+                         b => call(b, three));
+    results.push(['gemini: hindi naghahanap ng kapalit kapag 400',
+                  !!r.threw && new Set(r.seen).size === 1, r.seen.join(' → ')]);
+
+    // 4. Ang 404 ay naretirong modelo. Doon mismo sulit ang kapalit —
+    //    tatlong araw kaming bulag noong Agosto dahil dito.
+    r = await withGemini(m => (m === 'una' ? { status: 404, body: '{"error":"wala na"}' } : good(m)),
+                         b => call(b, three));
+    results.push(['gemini: dumadaan sa kapalit kapag naretiro ang una (404)',
+                  !r.threw && r.value && r.value.sagot === 'pangalawa',
+                  r.threw ? r.threw.message.slice(0, 70) : r.seen.join(' → ')]);
+
+    // 5. Ang 403 ay masamang susi. Walang modelong makakatulong diyan.
+    r = await withGemini(() => ({ status: 403, body: '{"error":"masamang susi"}' }),
+                         b => call(b, three));
+    results.push(['gemini: hindi naghahanap ng kapalit kapag 403',
+                  !!r.threw && new Set(r.seen).size === 1, r.seen.join(' → ')]);
+  };
+
+  global.__geminiTest = run().then(() => results.forEach(a => check(...a)));
+}
+
+/* ---------- 3i3. isang tawag lang sa Gemini sa buong bot ---------- */
+{
+  // Dalawang magkapareho-parehong kopya ng callGemini ang mayroon noon, sa
+  // generate.js at sa showcase.js. Ang kapalit na modelo ay nadagdag sana sa
+  // isa lang, at ang isa ay mananatiling bulag sa 503.
+  const files = ['generate.js', 'showcase.js', 'publish.js'];
+  const rogue = files.filter(f =>
+    fs.readFileSync(path.join(__dirname, f), 'utf8').includes('generativelanguage'));
+  check('gemini: walang sariling URL ang generate at showcase', rogue.length === 0,
+        rogue.join(', ') || 'sa bot/gemini.js lang');
+
+  const { DEFAULT_MODELS, models } = require('./gemini');
+  check('gemini: higit sa isa ang modelo sa listahan', DEFAULT_MODELS.length > 1,
+        DEFAULT_MODELS.join(' → '));
+  check('gemini: kayang hatiin ng kuwit ang GEMINI_MODEL', (() => {
+    const was = process.env.GEMINI_MODEL;
+    process.env.GEMINI_MODEL = ' a , b ';
+    const got = models().join('|');
+    if (was === undefined) delete process.env.GEMINI_MODEL; else process.env.GEMINI_MODEL = was;
+    return got === 'a|b';
+  })());
+}
+
 /* ---------- 3j. hindi inaalok ng dashboard ang natutulog na `post` ---------- */
 {
   // Ang `post` ay tumatawag sa bot/publish.js at sa Meta API. Development
@@ -852,8 +967,9 @@ const report = () => {
 };
 
 // Hintayin ang mga test na hindi kayang tapusin nang sunod-sunod.
-if (global.__httpTest) {
-  global.__httpTest.then(report, e => { check('http: tumakbo', false, e.message); report(); });
+const pending = [global.__httpTest, global.__geminiTest].filter(Boolean);
+if (pending.length) {
+  Promise.all(pending).then(report, e => { check('async: tumakbo', false, e.message); report(); });
 } else {
   report();
 }
