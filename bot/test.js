@@ -830,13 +830,46 @@ for (const [label, patch] of mustFail) {
   const { DEFAULT_MODELS, models } = require('./gemini');
   check('gemini: higit sa isa ang modelo sa listahan', DEFAULT_MODELS.length > 1,
         DEFAULT_MODELS.join(' → '));
-  check('gemini: kayang hatiin ng kuwit ang GEMINI_MODEL', (() => {
+
+  // Isinasauli ang env pagkatapos: may mga test sa ibaba na nagpapatakbo ng
+  // generate.js bilang hiwalay na proseso, at minamana nila ito.
+  const withVar = value => {
     const was = process.env.GEMINI_MODEL;
-    process.env.GEMINI_MODEL = ' a , b ';
-    const got = models().join('|');
-    if (was === undefined) delete process.env.GEMINI_MODEL; else process.env.GEMINI_MODEL = was;
-    return got === 'a|b';
-  })());
+    if (value === null) delete process.env.GEMINI_MODEL;
+    else process.env.GEMINI_MODEL = value;
+    const got = models();
+    if (was === undefined) delete process.env.GEMINI_MODEL;
+    else process.env.GEMINI_MODEL = was;
+    return got;
+  };
+
+  check('gemini: kayang hatiin ng kuwit ang GEMINI_MODEL',
+        withVar(' a , b ').slice(0, 2).join('|') === 'a|b',
+        withVar(' a , b ').join(' → '));
+
+  // ITO ANG BUMAGSAK NOONG 2026-09-07.
+  //
+  // Nakatakda ang repo variable sa iisang `gemini-3.6-flash`. Kinuha ito ng
+  // unang bersyon bilang BUONG listahan, kaya tahimik na napatay ang kapalit
+  // — at ang lunas ay nakaupo lang sa repo habang barado ang 3.6 buong araw.
+  //
+  // Ang variable ay nagpipili ng UNA. Hindi ito bumubura ng kapalit.
+  const one = withVar('gemini-3.6-flash');
+  check('gemini: hindi kayang patayin ng iisang variable ang kapalit',
+        one.length > 1, one.join(' → '));
+  check('gemini: ang variable ang nauuna sa listahan',
+        one[0] === 'gemini-3.6-flash', one[0]);
+
+  // Kahit gaano kagulo ang variable, walang dobleng modelo — sayang ang
+  // subok sa parehong saradong pinto.
+  const messy = withVar('gemini-3.8-flash, gemini-3.6-flash, gemini-3.8-flash');
+  check('gemini: walang dobleng modelo', new Set(messy).size === messy.length,
+        messy.join(' → '));
+  check('gemini: ang pinili ang nauuna kahit hindi ito ang default',
+        messy[0] === 'gemini-3.8-flash', messy[0]);
+
+  check('gemini: may listahan pa rin kapag walang variable',
+        withVar(null).join('|') === DEFAULT_MODELS.join('|'));
 }
 
 /* ---------- 3j. hindi inaalok ng dashboard ang natutulog na `post` ---------- */

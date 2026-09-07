@@ -102,6 +102,13 @@ loob ng isang modelo ay walang silbi roon. Tatlong modelo ngayon sa `gemini.js`,
 sunod-sunod. Ang 400 at 403 ay hindi naghahanap ng kapalit — pareho iyon sa
 lahat. Ang 404 at 503 ay naghahanap.
 
+At isa pang aral mula sa parehong araw: ang repo variable na `GEMINI_MODEL` ay
+**nagpipili ng una**, hindi bumubura ng kapalit. Nakatakda ito sa iisang modelo,
+kaya ang unang bersyon ng lunas — na kinukuha ang variable bilang buong
+listahan — ay tahimik na pinatay ang kapalit. Nakaupo lang sa repo ang lunas
+habang barado ang 3.6 buong araw. Ang isang setting ay hindi dapat kayang
+patayin ang safety net.
+
 **Huwag ilagay ang logic sa loob ng YAML.**
 Hindi masusubok ang nakabaon sa workflow. Kaya nasa `bot/route.sh` ang pagbasa
 ng comment — may 39 na kaso doon.

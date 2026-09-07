@@ -21,8 +21,6 @@
  */
 const { fetchRetry } = require('./http');
 
-// Puwedeng palitan sa repo variable na GEMINI_MODEL — tuldok-kuwit man o
-// kuwit, listahan pa rin. Ang una ang laging sinusubok muna.
 const DEFAULT_MODELS = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash'];
 
 // Function, hindi const: para mabasa ang env sa oras ng tawag at hindi sa
@@ -30,9 +28,24 @@ const DEFAULT_MODELS = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flas
 const baseUrl = () => process.env.GEMINI_BASE_URL ||
   'https://generativelanguage.googleapis.com/v1beta/models';
 
+/**
+ * Ang susubukang modelo, sunod-sunod.
+ *
+ * Ang repo variable na GEMINI_MODEL ay NAGPIPILI NG UNA — hindi ito bumubura
+ * ng kapalit. Idinudugtong pa rin ang buong default sa likod nito.
+ *
+ * Mahalaga ang pagkakaiba. Noong 2026-09-07, nakatakda ang variable sa iisang
+ * `gemini-3.6-flash`, kaya ang unang bersyon nito — na kinukuha ang variable
+ * bilang buong listahan — ay tahimik na pinatay ang buong kapalit. Barado ang
+ * 3.6 buong araw, at ang lunas ay nakaupo lang sa repo na hindi tumatakbo.
+ *
+ * Ang isang setting ay hindi dapat kayang patayin ang safety net. Kung talagang
+ * iisang modelo ang gusto, ang tanggihan ang kapalit ay dapat sinasadya at
+ * malakas ang sinasabi — hindi bunga ng isang naiwang variable.
+ */
 function models() {
   const raw = (process.env.GEMINI_MODEL || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
-  return raw.length ? raw : DEFAULT_MODELS;
+  return [...new Set([...raw, ...DEFAULT_MODELS])];
 }
 
 /**
@@ -57,6 +70,7 @@ const worthAnotherModel = status => status !== 400 && status !== 403;
  */
 async function callGemini(body, key, opts = {}) {
   const { log = console.error, base = baseUrl(), list = models() } = opts;
+  log(`   modelo: ${list.join(' → ')}`);
   let last;
 
   for (const [i, model] of list.entries()) {
@@ -71,7 +85,7 @@ async function callGemini(body, key, opts = {}) {
         body: JSON.stringify(body),
       }, {
         attempts: 2,
-        timeoutMs: 45000,
+        timeoutMs: 60000,
         onRetry: (n, why) => log(`   ${model} subok ${n} — ${why.slice(0, 160)}`),
       });
     } catch (e) {
