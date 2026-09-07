@@ -88,13 +88,17 @@ async function callGemini(body, key, opts = {}) {
   let last;
 
   for (const [i, model] of list.entries()) {
-    // Dalawang subok sa una, isa sa bawat kapalit.
+    // ISANG subok kada modelo. Ang kapalit mismo ang ulit.
     //
-    // Ang ulit sa loob ng isang modelo ay para sa sandaling pagputol ng
-    // network — at doon lang ito may silbi. Kapag barado ang modelo, barado
-    // pa rin ito makalipas ang limang segundo; ang kapalit mismo ang tunay
-    // na ulit. At may hangganang labinlimang minuto ang job: kung dalawa
-    // ang subok sa lima, hindi na ito kakasya.
+    // Dalawang dahilan. Una: kapag barado ang modelo, barado pa rin ito
+    // makalipas ang limang segundo — ang ibang pila ang tunay na ulit, hindi
+    // ang parehong pinto.
+    //
+    // Pangalawa, at ito ang mas mahigpit: 20 request kada araw ang hangganan
+    // ng free tier, KADA MODELO. Anim ang alarma at hanggang tatlo ang draft,
+    // kaya 18 na ang pinakamasama sa isang modelo kung tig-isa ang subok.
+    // Kung dalawa, 36 iyon — at ang gantimpala sa pagsusubok nang husto sa
+    // umaga ay ang maubusan ng subok sa gabi.
     let res;
     try {
       res = await fetchRetry(`${base}/${model}:generateContent`, {
@@ -102,7 +106,7 @@ async function callGemini(body, key, opts = {}) {
         headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       }, {
-        attempts: i === 0 ? 2 : 1,
+        attempts: 1,
         timeoutMs: 60000,
         onRetry: (n, why) => log(`   ${model} subok ${n} — ${why.slice(0, 160)}`),
       });

@@ -738,6 +738,35 @@ for (const [label, patch] of mustFail) {
   global.__httpTest = run().then(() => results.forEach(a => check(...a)));
 }
 
+/* ---------- 3i1. kasya ba tayo sa 20 request kada araw ---------- */
+{
+  // Free tier ang susi, at ang hangganan doon ay 20 request kada araw KADA
+  // MODELO. Hindi ito RPM — kaya nito ang bilis natin. Ang RPD ang masikip.
+  //
+  // Tatlong bilang ang dumadami nang magkakapatong: bilang ng alarma, bilang
+  // ng draft, at bilang ng subok kada modelo. Ang bawat isa ay mukhang
+  // makatuwiran kapag nag-iisa. Ang produkto nila ang pumapatay.
+  //
+  // Noong Setyembre 7 ay anim na alarma ang idinagdag para malampasan ang
+  // pitong oras na pagsasara ng Gemini. Kung dalawa ang subok kada modelo,
+  // 36 sana iyon sa isang modelo — at ang gantimpala sa pagsusubok nang husto
+  // sa umaga ay ang maubusan ng subok sa gabi.
+  const RPD = 20;
+  const wf = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'daily-post.yml'), 'utf8');
+  const gen = fs.readFileSync(path.join(__dirname, 'generate.js'), 'utf8');
+  const gem = fs.readFileSync(path.join(__dirname, 'gemini.js'), 'utf8');
+
+  const alarms = (wf.match(/^\s*- cron:/gm) || []).length;
+  const drafts = +((/const DRAFTS = (\d+);/.exec(gen) || [])[1] || 0);
+  const tries  = +((/attempts: (\d+),/.exec(gem) || [])[1] || 0);
+  const worst  = alarms * drafts * tries;
+
+  check('quota: nababasa ang tatlong bilang', alarms && drafts && tries,
+        `${alarms} alarma × ${drafts} draft × ${tries} subok`);
+  check(`quota: kasya sa ${RPD} request kada araw`, worst > 0 && worst <= RPD,
+        `${worst} ang pinakamasama sa isang modelo`);
+}
+
 /* ---------- 3i2. may kapalit na modelo kapag nabarahan ang una ---------- */
 {
   // Noong 2026-09-07, limang run ang bumagsak sa iisang mensahe:

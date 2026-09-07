@@ -111,8 +111,18 @@ lahat. Ang 404 at 503 ay naghahanap.
 Limang modelo ngayon, at sinasadya ang pagkakasunod. Ang unang lunas ay tatlong
 Flash ng henerasyong 3 — 3.6, 3.8, 3.7 — at nang subukan, tatlong 503 rin ang
 sagot. Magkakapatid sila sa parehong pila. Kaya may `gemini-2.5-flash` (ibang
-henerasyon) at `gemini-2.5-pro` (ibang pamilya) na ngayon sa dulo. Hindi tier
-ang 503 — hindi ito maaayos ng pagbabayad; shared capacity iyon ng Google.
+henerasyon) at `gemini-2.5-pro` (ibang pamilya) na ngayon sa dulo.
+
+**Ang 503 ay hindi quota.** Puno ang makina, hindi ang bilang mo. Hindi ito
+tinitingnan ng bagong susi, at walang garantiya ang pagbabayad — may mga
+gumagamit sa paid tier na tumatama rin dito. Pero ang free tier ang unang
+napipiga, kaya hindi rin ito walang kaugnayan.
+
+**Ang free tier ay 20 request kada araw, KADA MODELO.** Hindi RPM ang masikip
+— kaya nito ang bilis natin. Ang RPD. Tatlong bilang ang dumadami nang
+magkakapatong: alarma × draft × subok kada modelo. Anim × tatlo × isa = 18,
+at may test sa `bot/test.js` na sumisigaw kapag lumagpas ito sa 20. Kapag
+nagdagdag ka ng alarma, iyon ang unang bibitak.
 
 At isa pang aral mula sa parehong araw: ang repo variable na `GEMINI_MODEL` ay
 **nagpipili ng una**, hindi bumubura ng kapalit. Nakatakda ito sa iisang modelo,
