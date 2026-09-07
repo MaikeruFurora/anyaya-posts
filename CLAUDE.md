@@ -90,8 +90,14 @@ Tatlong harang ngayon: marka sa pamagat, babala sa issue, at tumatanggi ang
 
 **Isang alarma ay hindi sapat.**
 Sa public repo, ang scheduled workflow ng GitHub ay nahuhuli nang ilang oras
-at minsan hindi na tumatakbo. Tatlong cron ngayon, at may guard sa
+at minsan hindi na tumatakbo. Anim na cron ngayon, at may guard sa
 `make-post.yml` laban sa dobleng post (`docs/posts/<petsa>.json`).
+
+At hindi sapat ang dami — mahalaga ang **pagkakalat**. Tatlo sila noon, pawang
+nasa loob ng dalawa't kalahating oras ng umaga. Nang sumara ang Gemini nang
+pitong oras noong Setyembre 7, iisang saradong pinto ang kinatok nating tatlo,
+at wala nang subok hanggang kinabukasan. Nakakalat na sila ngayon sa
+labing-apat na oras: 6:00, 7:15, 8:45 AM, 12:30, 4:00, at 8:00 PM.
 
 **Isang modelo ay hindi sapat.**
 Noong Setyembre 7, limang run ang bumagsak sa iisang mensahe: `HTTP 503 — This
@@ -101,6 +107,12 @@ kaya tumama ang lahat ng tatlong alarma sa parehong saradong pinto. Ang ulit sa
 loob ng isang modelo ay walang silbi roon. Tatlong modelo ngayon sa `gemini.js`,
 sunod-sunod. Ang 400 at 403 ay hindi naghahanap ng kapalit — pareho iyon sa
 lahat. Ang 404 at 503 ay naghahanap.
+
+Limang modelo ngayon, at sinasadya ang pagkakasunod. Ang unang lunas ay tatlong
+Flash ng henerasyong 3 — 3.6, 3.8, 3.7 — at nang subukan, tatlong 503 rin ang
+sagot. Magkakapatid sila sa parehong pila. Kaya may `gemini-2.5-flash` (ibang
+henerasyon) at `gemini-2.5-pro` (ibang pamilya) na ngayon sa dulo. Hindi tier
+ang 503 — hindi ito maaayos ng pagbabayad; shared capacity iyon ng Google.
 
 At isa pang aral mula sa parehong araw: ang repo variable na `GEMINI_MODEL` ay
 **nagpipili ng una**, hindi bumubura ng kapalit. Nakatakda ito sa iisang modelo,

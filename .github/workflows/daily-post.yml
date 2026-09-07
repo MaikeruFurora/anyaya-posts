@@ -4,15 +4,33 @@ name: Daily post
 
 on:
   schedule:
-    # Tatlong alarma, hindi isa. Sa public repo, ang orasan ng GitHub ay
+    # Anim na alarma, hindi isa. Sa public repo, ang orasan ng GitHub ay
     # nahuhuli nang ilang oras at minsan hindi na tumatakbo — at kapag
     # nangyari iyon sa iisang alarma, nawawala ang buong araw.
     #
+    # Nakakalat sila sa labing-apat na oras, hindi magkakadikit. Hindi lang
+    # ito laban sa nahuhuling orasan: kapag sarado ang Gemini nang ilang
+    # oras, ang magkakadikit na alarma ay iisang subok lang ang halaga.
+    #
     # Ligtas ang pag-ulit: bago gumalaw, tinitingnan ng make-post.yml kung
     # may post na para sa araw na ito. Kung meron, tahimik itong huhupa.
+    # Umaga — dito dapat lumabas ang post.
     - cron: '0 22 * * *'    # 6:00 AM Maynila
     - cron: '15 23 * * *'   # 7:15 AM — kung hindi pumutok ang una
-    - cron: '45 0 * * *'    # 8:45 AM — huling subok
+    - cron: '45 0 * * *'    # 8:45 AM
+    #
+    # Hapon at gabi — para sa araw na sarado ang Gemini buong umaga.
+    #
+    # Noong Setyembre 7 ay pitong oras na 503 ang inabot ng lahat ng modelo.
+    # Tatlong alarma tayo noon, at pawang nasa loob ng dalawa't kalahating
+    # oras — kaya iisang saradong pinto ang kinatok nating tatlong beses, at
+    # wala nang subok hanggang kinabukasan.
+    #
+    # Ang post na nagawa ng alas-kuwatro ng hapon ay walang katumbas na
+    # kapalit kung wala. Huhupa naman ang mga ito kapag may post na.
+    - cron: '30 4 * * *'    # 12:30 PM
+    - cron: '0 8 * * *'     # 4:00 PM
+    - cron: '0 12 * * *'    # 8:00 PM
   workflow_dispatch:
     inputs:
       date:

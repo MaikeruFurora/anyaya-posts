@@ -21,7 +21,21 @@
  */
 const { fetchRetry } = require('./http');
 
-const DEFAULT_MODELS = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash'];
+// Sunod-sunod ang listahan, at sinasadya ang pagkakasunod: hindi lang ibang
+// laki, kundi ibang henerasyon at ibang pamilya.
+//
+// Noong 2026-09-07 ay tatlong Flash ng henerasyong 3 ang sinubukan — 3.6,
+// 3.8, 3.7 — at tatlong 503 ang sagot. Magkakapatid sila sa parehong pila.
+// Ang bagong modelo ang unang napupuno kapag may spike; ang mas luma ay
+// madalas may natitirang puwang. Ang Pro ay ibang pamilya, at doon huling
+// tumitingin — mas mahal ito, at isang tawag lang naman kada araw.
+const DEFAULT_MODELS = [
+  'gemini-3.6-flash',   // ang panghimpapawid: tama ang timpla para sa caption
+  'gemini-3.8-flash',   // parehong henerasyon
+  'gemini-3.7-flash',   // parehong henerasyon
+  'gemini-2.5-flash',   // ibang henerasyon — ibang pila
+  'gemini-2.5-pro',     // ibang pamilya — ang huling pinto
+];
 
 // Function, hindi const: para mabasa ang env sa oras ng tawag at hindi sa
 // oras ng require. Iyon ang nagpapasubok dito nang walang internet.
@@ -74,9 +88,13 @@ async function callGemini(body, key, opts = {}) {
   let last;
 
   for (const [i, model] of list.entries()) {
-    // Dalawang subok kada modelo, hindi tatlo. Tatlong modelo ang mayroon,
-    // kaya anim na subok ito sa kabuuan — at kailangang kasya ang lahat sa
-    // labinlimang minutong hangganan ng job.
+    // Dalawang subok sa una, isa sa bawat kapalit.
+    //
+    // Ang ulit sa loob ng isang modelo ay para sa sandaling pagputol ng
+    // network — at doon lang ito may silbi. Kapag barado ang modelo, barado
+    // pa rin ito makalipas ang limang segundo; ang kapalit mismo ang tunay
+    // na ulit. At may hangganang labinlimang minuto ang job: kung dalawa
+    // ang subok sa lima, hindi na ito kakasya.
     let res;
     try {
       res = await fetchRetry(`${base}/${model}:generateContent`, {
@@ -84,7 +102,7 @@ async function callGemini(body, key, opts = {}) {
         headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       }, {
-        attempts: 2,
+        attempts: i === 0 ? 2 : 1,
         timeoutMs: 60000,
         onRetry: (n, why) => log(`   ${model} subok ${n} — ${why.slice(0, 160)}`),
       });

@@ -519,11 +519,25 @@ for (const [label, patch] of mustFail) {
   const make  = path.join(wfDir, 'make-post.yml');
 
   if (fs.existsSync(daily)) {
-    const crons = (fs.readFileSync(daily, 'utf8').match(/^\s*- cron:/gm) || []).length;
+    const txt = fs.readFileSync(daily, 'utf8');
+    const crons = (txt.match(/^\s*- cron:/gm) || []).length;
     check('orasan: higit sa isang alarma', crons >= 2, `${crons} cron`);
+
+    // Ang magkakadikit na alarma ay iisang subok lang ang halaga kapag
+    // ilang oras ang pagkasara ng Gemini. Noong Setyembre 7 ay pitong oras
+    // ang barahan, at ang tatlong alarma natin ay pawang nasa loob ng
+    // dalawa't kalahating oras — kaya iisang saradong pinto ang kinatok
+    // nating tatlo, at wala nang subok hanggang kinabukasan.
+    const hours = [...txt.matchAll(/^\s*- cron: '(\d+) (\d+)/gm)]
+      .map(m => (+m[2] * 60 + +m[1]));
+    // UTC ang cron. Ipihit sa Maynila para mabasa ng tao ang pagkakalat.
+    const manila = hours.map(m => (m + 480) % 1440).sort((a, b) => a - b);
+    const span = manila.length ? manila[manila.length - 1] - manila[0] : 0;
+    const clock = manila.map(m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+    check('orasan: nakakalat sa maghapon, hindi magkakadikit',
+          span >= 8 * 60, `${(span / 60).toFixed(1)} oras — ${clock.join(' ')}`);
     check('orasan: naipapasa ang skip_if_exists',
-          /skip_if_exists:\s*\$\{\{\s*github\.event_name == 'schedule'/
-            .test(fs.readFileSync(daily, 'utf8')));
+          /skip_if_exists:\s*\$\{\{\s*github\.event_name == 'schedule'/.test(txt));
   }
   if (fs.existsSync(make)) {
     const txt = fs.readFileSync(make, 'utf8');
@@ -830,6 +844,18 @@ for (const [label, patch] of mustFail) {
   const { DEFAULT_MODELS, models } = require('./gemini');
   check('gemini: higit sa isa ang modelo sa listahan', DEFAULT_MODELS.length > 1,
         DEFAULT_MODELS.join(' → '));
+
+  // Noong Setyembre 7 ay tatlong Flash ng henerasyong 3 ang nasa listahan,
+  // at tatlong 503 ang sagot. Magkakapatid sila sa parehong pila. Ang
+  // kapalit ay may silbi lang kung ibang pila ito.
+  const family = m => (/-pro$/.test(m) ? 'pro' : 'flash');
+  const gen = m => (/gemini-(\d+)/.exec(m) || [])[1];
+  check('gemini: higit sa isang henerasyon sa listahan',
+        new Set(DEFAULT_MODELS.map(gen)).size > 1,
+        [...new Set(DEFAULT_MODELS.map(gen))].join(', '));
+  check('gemini: higit sa isang pamilya sa listahan',
+        new Set(DEFAULT_MODELS.map(family)).size > 1,
+        [...new Set(DEFAULT_MODELS.map(family))].join(', '));
 
   // Isinasauli ang env pagkatapos: may mga test sa ibaba na nagpapatakbo ng
   // generate.js bilang hiwalay na proseso, at minamana nila ito.
