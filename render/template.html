@@ -135,6 +135,15 @@ body[data-fit="s"] h1{font-size:74px}
 body[data-fit="xs"] h1{font-size:62px}
 body[data-fit="xs"] .body{font-size:28px}
 
+/* Ang bilang ay nasa labas ng auto-fit noon, kaya walang hakbang na
+   nakakasagip sa `stat`. Dalawang post ang lumabas na sira noong Setyembre
+   dahil dito. Hindi ito kapalit ng guardrail sa validate.js — pangalawang
+   harang lang, para kahit lumusot ang teksto ay may itsura pa rin. */
+body[data-fit="s"]  .bignum{font-size:190px}
+body[data-fit="s"]  .statlabel{font-size:50px}
+body[data-fit="xs"] .bignum{font-size:132px}
+body[data-fit="xs"] .statlabel{font-size:43px}
+
 /* ---------- footer ---------- */
 .foot{
   margin-top:46px;
@@ -647,19 +656,29 @@ document.getElementById('stack').innerHTML =
   html.replace(/(<div class="foot">)/, '</div>$1').replace(/^/, '<div class="mid">');
 
 // ---- auto-fit: shrink type until content clears the canvas ----
-(function fit(){
+//
+// Tumatakbo ito PAGKATAPOS dumating ang font. Ibang metrics ang Cormorant
+// Garamond kaysa sa pamalit na font ng browser, kaya ang sukat na kinuha bago
+// ito dumating ay sukat ng ibang teksto — at ang hakbang na napili doon ay
+// hindi na tumutugma sa lumalabas na larawan.
+//
+// Pahalang din, hindi lang pataas. Ang isang mahabang salita sa 252px ay
+// hindi lumalampas sa taas — pumuputol ito sa magkabilang gilid, at hindi ito
+// nakikita ng scrollHeight.
+function fit(){
   const canvas = document.querySelector('.canvas');
   const stack  = document.getElementById('stack');
-  const steps  = ['', 's', 'xs'];
-  for (const step of steps) {
+  for (const step of ['', 's', 'xs']) {
     document.body.dataset.fit = step;
-    const avail = canvas.clientHeight - (parseInt(getComputedStyle(canvas).paddingTop) * 2);
-    if (stack.scrollHeight <= avail) return;
+    const pad = parseInt(getComputedStyle(canvas).paddingTop) * 2;
+    if (stack.scrollHeight <= canvas.clientHeight - pad &&
+        stack.scrollWidth  <= canvas.clientWidth) return;
   }
-})();
+}
 
 // signal to puppeteer that fonts + layout are settled
 document.fonts.ready.then(() => {
+  fit();
   requestAnimationFrame(() => { document.body.setAttribute('data-ready','1'); });
 });
 </script>

@@ -82,17 +82,66 @@ function validate(g, ctx) {
     throw new Error('Nagbukas ang caption sa tanong — bawal iyon.');
   }
 
+  // ---------- ang teksto sa larawan ----------
+  //
+  // Labing-isang guardrail ang mayroon tayo, at pawang tungkol sa caption.
+  // Halos walang nagbabantay sa teksto ng larawan — at ang larawan ang
+  // tinitingnan ng tao. Ang caption ay nasa ilalim ng "See more".
+  //
+  // Noong 2026-09-05 at 09-08, dalawang `stat` na post ang lumabas na sira:
+  // buong pangungusap ang ipinasok sa `.bignum`, na 252px at ginawa para sa
+  // "1 in 5". Umapaw ito sa magkabilang gilid ng larawan. Sinasabi na ng
+  // prompt ang hangganan — "statValue (max 8 chars)" — pero walang
+  // nagpapatupad nito, at hiling lang ang prompt.
+  //
+  // Dalawang klase ang hangganan dito:
+  //
+  //   MATIGAS — nakaupo sa kasangkapang nakapirmi ang laki. Ang bilang sa
+  //   252px at ang label sa pindutan. Walang auto-fit na makakasagip dito,
+  //   kaya eksakto ang bilang, walang palugit.
+  //
+  //   MALUWAG — dumadaloy sa bloke ng teksto na kayang paliitin ng auto-fit.
+  //   May palugit na mga labinlimang bahagdan sa hinihingi ng prompt: ang
+  //   halos-tama ay hindi dapat magpasimula ng bagong draft. Dalawampung
+  //   request lang ang mayroon tayo kada araw.
+  const plain = t => String(t == null ? '' : t).replace(/\*/g, '').trim();
+  const cap = (field, text, max, hard) => {
+    const n = plain(text).length;
+    if (n > max) {
+      throw new Error(
+        `Sobrang haba ang ${field}: ${n} titik, ${max} ang taas` +
+        (hard ? ' (nakapirmi ang laki ng titik dito)' : '') +
+        ` — "${plain(text).slice(0, 60)}"`);
+    }
+  };
+
   // ---------- hugis para sa renderer ----------
   const design = { variant: g.variant, size: 'portrait', paper: ctx.paper || 'cream' };
+
+  cap('eyebrow', g.eyebrow, 34);
+  if (g.variant === 'question')      cap('headline', g.headline, 75);
+  else if (g.variant === 'showcase') cap('headline', g.headline, 65);
+  else                               cap('headline', g.headline, 110);
+  cap('body', g.body, g.variant === 'showcase' ? 130 : 175);
+  (g.items || []).forEach((t, i) => cap(`item ${i + 1}`, t, 125));
   if (g.eyebrow)  design.eyebrow  = g.eyebrow;
   if (g.headline) design.headline = g.headline;
   if (g.body)     design.body     = g.body;
   if (g.items && g.items.length) design.items = g.items.slice(0, 5);
 
   if (g.variant === 'stat') {
+    // MATIGAS. Ang `.bignum` ay 252px at hindi kasama sa auto-fit hanggang
+    // ngayon — at kahit kasama na, ang bilang ay bilang. Ito ang eksaktong
+    // hinihingi ng prompt.
+    cap('statValue', g.statValue, 8, true);
+    cap('statLabel', g.statLabel, 70);
     design.stat = { value: g.statValue, label: g.statLabel };
   }
   if (g.variant === 'compare') {
+    cap('compareLeftTitle', g.compareLeftTitle, 26);
+    cap('compareRightTitle', g.compareRightTitle, 26);
+    [...(g.compareLeft || []), ...(g.compareRight || [])]
+      .forEach((t, i) => cap(`hanay ${i + 1}`, t, 62));
     design.compare = {
       leftTitle:  g.compareLeftTitle,
       left:       (g.compareLeft  || []).slice(0, 4),
@@ -100,7 +149,11 @@ function validate(g, ctx) {
       right:      (g.compareRight || []).slice(0, 4),
     };
   }
-  if (g.variant === 'cta') design.cta = g.ctaLabel;
+  if (g.variant === 'cta') {
+    // MATIGAS. Pindutan ito — hindi ito lumalaki kasama ng teksto.
+    cap('ctaLabel', g.ctaLabel, 18, true);
+    design.cta = g.ctaLabel;
+  }
 
   if (g.variant === 'showcase') {
     // Ang larawan ay galing sa iyo, hindi sa AI. Kung wala ito, walang post —

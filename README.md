@@ -14,7 +14,8 @@ Walang server. Walang database. Walang bayad.
             ↓ pumipili ng pillar, serbisyo, angle, disenyo, papel, hugis
           Gemini — sumusulat ng caption at ng teksto sa disenyo
             ↓
-          11 guardrails — kung may tumama, huminto. Walang post.
+          guardrails sa caption at sa teksto ng larawan — kung may
+          tumama, huminto. Walang post.
             ↓
           Puppeteer — HTML → JPEG 1080×1350 → commit sa docs/posts/
             ↓
@@ -73,7 +74,7 @@ Wala ni isang hakbang na nangangailangan ng serverong gising.
 bot/
   content.js         ← 6 pillars, 121 angles, ang system prompt. DITO mag-edit.
   showcase.js        ← totoong gawa: larawan mo + maikling kuwento → post
-  validate.js        ← ang 11 guardrails
+  validate.js        ← ang mga guardrails
   generate.js        ← pick → Gemini → validate → design.json
   publish.js         ← Facebook at Instagram
   issue-body.js      ← ang itsura ng approval issue

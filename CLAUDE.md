@@ -36,7 +36,7 @@ Sinusulat ng AI, may branded na disenyo, at ang may-ari ang nag-a-approve.
 
 bot/
   content.js          6 pillar, 121 angle, ang system prompt. DITO ang laman.
-  validate.js         11 guardrail. Nagtatapon ng error — sinasadya iyon.
+  validate.js         guardrail sa caption AT sa teksto ng larawan.
   gemini.js           ang tawag sa Gemini. Tatlong modelo, may kapalit.
   http.js             fetch na may ulit, may timeout, at may bibig.
   generate.js         pick → Gemini → validate → design.json
@@ -130,6 +130,26 @@ kaya ang unang bersyon ng lunas — na kinukuha ang variable bilang buong
 listahan — ay tahimik na pinatay ang kapalit. Nakaupo lang sa repo ang lunas
 habang barado ang 3.6 buong araw. Ang isang setting ay hindi dapat kayang
 patayin ang safety net.
+
+**Ang caption ay binabantayan; ang larawan noon ay hindi.**
+Labing-isang guardrail ang mayroon tayo, at pawang tungkol sa caption — gayong
+ang larawan ang unang nakikita, at ang caption ay nasa ilalim ng "See more".
+Noong Setyembre 5 at 8, dalawang `stat` na post ang lumabas na sira: buong
+pangungusap sa loob ng `.bignum`, na 252px at ginawa para sa "1 in 5". Umapaw
+ito sa magkabilang gilid. Sinasabi na ng prompt ang hangganan — "statValue
+(max 8 chars)" — pero hiling lang pala iyon at walang nagpapatupad.
+
+May hangganan na ngayon ang bawat teksto sa larawan. Matigas para sa nakaupo
+sa kasangkapang nakapirmi ang laki (ang bilang sa 252px, ang label ng
+pindutan); maluwag na may palugit para sa dumadaloy sa bloke ng teksto —
+dalawampung request lang tayo kada araw, at ang halos-tama ay hindi dapat
+magpasimula ng bagong draft.
+
+At may auto-fit na pala ang template mula pa noon — tumatakbo, may tatlong
+hakbang, pero walang hakbang para sa `.bignum`. Sinusukat pa nito ang teksto
+bago dumating ang font. Kapag nagdagdag ka ng malaking teksto sa
+`template.html`, bigyan mo ito ng hakbang sa `data-fit` — may test na
+naghahanap.
 
 **Huwag ilagay ang logic sa loob ng YAML.**
 Hindi masusubok ang nakabaon sa workflow. Kaya nasa `bot/route.sh` ang pagbasa

@@ -391,6 +391,84 @@ for (const [label, patch] of mustFail) {
         why(shaped({ bullets: [longBullet, three[1], three[2]], pad: 15 })).slice(0, 46));
 }
 
+/* ---------- 3a4. ang teksto sa loob ng larawan ---------- */
+{
+  // Labing-isang guardrail, pawang tungkol sa caption. Ang larawan — ang
+  // tinitingnan mismo ng tao — ay halos walang bantay.
+  //
+  // Noong 2026-09-05 at 09-08 ay dalawang `stat` na post ang lumabas na sira:
+  // buong pangungusap sa loob ng `.bignum`, na 252px at ginawa para sa
+  // "1 in 5". Umapaw ito sa magkabilang gilid. Sinasabi na ng prompt ang
+  // hangganan; hiling lang pala iyon, at walang nagpapatupad.
+  const ctx = { paper: 'kraft', variant: 'stat' };
+  const base = {
+    variant: 'stat',
+    eyebrow: 'Why the count matters',
+    statValue: '1 in 5',
+    statLabel: 'who *confirmed* will not arrive',
+    body: 'A live count with a real deadline costs less than the food you over-order.',
+    caption: goodEnglish,
+    hashtags: ['#WeddingPH'],
+  };
+  const ok  = d => { try { validate({ ...base, ...d }, ctx); return true; } catch { return false; } };
+  const why = d => { try { validate({ ...base, ...d }, ctx); return ''; } catch (e) { return e.message; } };
+
+  check('larawan: tinatanggap ang tunay na bilang', ok({}), why({}).slice(0, 70));
+
+  // Ito mismo ang lumabas sa larawan noong 2026-09-08.
+  const sira = 'so unnamed plus-ones cannot slip onto your catering count';
+  check('larawan: tinatanggihan ang pangungusap sa loob ng bilang',
+        !ok({ statValue: sira }));
+  check('larawan: sinasabi ng mensahe ang taas at ang laman',
+        /8 ang taas/.test(why({ statValue: sira })) && /nakapirmi/.test(why({ statValue: sira })),
+        why({ statValue: sira }).slice(0, 80));
+
+  // Ang markup ay hindi nakikita sa larawan, kaya hindi ito dapat bilangin.
+  // Kung binibilang, ang isang tamang headline na may diin ay tatanggihan.
+  const withMarkup = { variant: 'quote', headline: '**' + 'x'.repeat(108) + '**',
+                       body: 'Short line.', statValue: undefined, statLabel: undefined };
+  check('larawan: hindi binibilang ang bituin ng markup',
+        ok(withMarkup), why(withMarkup).slice(0, 70));
+
+  const tooLong = { variant: 'quote', headline: 'x'.repeat(111), body: 'Short line.' };
+  check('larawan: may taas pa rin ang headline', !ok(tooLong), why(tooLong).slice(0, 60));
+
+  // Pindutan ang ctaLabel — hindi ito lumalaki kasama ng teksto.
+  check('larawan: tinatanggihan ang mahabang label ng pindutan',
+        !ok({ variant: 'cta', headline: 'Send us your motif', body: 'We will match it.',
+              ctaLabel: 'Message us today about your event' }));
+  check('larawan: tinatanggap ang maikling label ng pindutan',
+        ok({ variant: 'cta', headline: 'Send us your motif', body: 'We will match it.',
+             ctaLabel: 'Message us' }));
+}
+
+/* ---------- 3a5. may hakbang ang auto-fit para sa bawat malaking teksto ---------- */
+{
+  // May auto-fit ang template — tumatakbo ito, at may tatlong hakbang. Pero
+  // ang `.bignum` ay nasa labas nito noon, kaya walang hakbang na makakasagip
+  // sa `stat` gaano man kahaba ang teksto.
+  //
+  // At isa pa: bago ito tumakbo sa loob ng fonts.ready, sinusukat nito ang
+  // teksto sa pamalit na font ng browser — ibang metrics, ibang sukat, at ang
+  // napiling hakbang ay hindi tumutugma sa lumalabas na larawan.
+  const tpl = fs.readFileSync(path.join(__dirname, '..', 'render', 'template.html'), 'utf8');
+
+  // Ang bawat linyang nagsisimula sa hakbang. Ang tanong ay simple: sino ang
+  // sinasakop nila?
+  const steps = tpl.split(/\r?\n/).filter(l => /^body\[data-fit="(s|xs)"\]/.test(l)).join(' ');
+  for (const sel of ['h1', '.bignum', '.statlabel']) {
+    check(`auto-fit: may hakbang para sa ${sel}`, steps.includes(sel));
+  }
+
+  // Ang sukat bago dumating ang font ay sukat ng ibang teksto.
+  check('auto-fit: tumatakbo pagkatapos dumating ang font',
+        /document\.fonts\.ready\.then\(\(\) => \{\s*fit\(\);/.test(tpl));
+
+  // Ang mahabang salita sa 252px ay hindi lumalampas sa taas — pumuputol ito
+  // sa gilid, at hindi iyon nakikita ng scrollHeight.
+  check('auto-fit: sinusukat din ang pahalang', /scrollWidth/.test(tpl));
+}
+
 /* ---------- 3b. showcase: totoong gawa ---------- */
 {
   const { showcaseBody } = require('./content');
