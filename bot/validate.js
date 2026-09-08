@@ -6,6 +6,8 @@
  * nagsisinungaling para sa negosyo mo.
  */
 
+const { limitFor, isHard, plain } = require('./limits');
+
 const BANNED = [
   // Ang presyo ay pwedeng nasa unahan o sa hulihan ng numero — nahuli ito ng
   // test noong Agosto 26: "It is 5000 php only" ay dumaan sa lumang bersyon.
@@ -84,46 +86,31 @@ function validate(g, ctx) {
 
   // ---------- ang teksto sa larawan ----------
   //
-  // Labing-isang guardrail ang mayroon tayo, at pawang tungkol sa caption.
-  // Halos walang nagbabantay sa teksto ng larawan — at ang larawan ang
-  // tinitingnan ng tao. Ang caption ay nasa ilalim ng "See more".
+  // Labing-isang guardrail ang mayroon tayo noon, at pawang tungkol sa
+  // caption. Halos walang nagbabantay sa teksto ng larawan — at ang larawan
+  // ang tinitingnan ng tao. Ang caption ay nasa ilalim ng "See more".
   //
-  // Noong 2026-09-05 at 09-08, dalawang `stat` na post ang lumabas na sira:
-  // buong pangungusap ang ipinasok sa `.bignum`, na 252px at ginawa para sa
-  // "1 in 5". Umapaw ito sa magkabilang gilid ng larawan. Sinasabi na ng
-  // prompt ang hangganan — "statValue (max 8 chars)" — pero walang
-  // nagpapatupad nito, at hiling lang ang prompt.
-  //
-  // Dalawang klase ang hangganan dito:
-  //
-  //   MATIGAS — nakaupo sa kasangkapang nakapirmi ang laki. Ang bilang sa
-  //   252px at ang label sa pindutan. Walang auto-fit na makakasagip dito,
-  //   kaya eksakto ang bilang, walang palugit.
-  //
-  //   MALUWAG — dumadaloy sa bloke ng teksto na kayang paliitin ng auto-fit.
-  //   May palugit na mga labinlimang bahagdan sa hinihingi ng prompt: ang
-  //   halos-tama ay hindi dapat magpasimula ng bagong draft. Dalawampung
-  //   request lang ang mayroon tayo kada araw.
-  const plain = t => String(t == null ? '' : t).replace(/\*/g, '').trim();
-  const cap = (field, text, max, hard) => {
+  // Nasa bot/limits.js ang mga bilang, at doon din kumukuha ang prompt.
+  // Basahin mo roon kung bakit iisa ang pinagmumulan nila.
+  const cap = (field, text, variant) => {
+    const max = limitFor(field, variant);
     const n = plain(text).length;
     if (n > max) {
       throw new Error(
         `Sobrang haba ang ${field}: ${n} titik, ${max} ang taas` +
-        (hard ? ' (nakapirmi ang laki ng titik dito)' : '') +
+        (isHard(field) ? ' (nakapirmi ang laki ng titik dito)' : '') +
         ` — "${plain(text).slice(0, 60)}"`);
     }
   };
 
+  const v = g.variant;
+  cap('eyebrow', g.eyebrow, v);
+  cap('headline', g.headline, v);
+  cap('body', g.body, v);
+  (g.items || []).forEach(t => cap('item', t, v));
+
   // ---------- hugis para sa renderer ----------
   const design = { variant: g.variant, size: 'portrait', paper: ctx.paper || 'cream' };
-
-  cap('eyebrow', g.eyebrow, 34);
-  if (g.variant === 'question')      cap('headline', g.headline, 75);
-  else if (g.variant === 'showcase') cap('headline', g.headline, 65);
-  else                               cap('headline', g.headline, 110);
-  cap('body', g.body, g.variant === 'showcase' ? 130 : 175);
-  (g.items || []).forEach((t, i) => cap(`item ${i + 1}`, t, 125));
   if (g.eyebrow)  design.eyebrow  = g.eyebrow;
   if (g.headline) design.headline = g.headline;
   if (g.body)     design.body     = g.body;
@@ -133,15 +120,15 @@ function validate(g, ctx) {
     // MATIGAS. Ang `.bignum` ay 252px at hindi kasama sa auto-fit hanggang
     // ngayon — at kahit kasama na, ang bilang ay bilang. Ito ang eksaktong
     // hinihingi ng prompt.
-    cap('statValue', g.statValue, 8, true);
-    cap('statLabel', g.statLabel, 70);
+    cap('statValue', g.statValue, v);
+    cap('statLabel', g.statLabel, v);
     design.stat = { value: g.statValue, label: g.statLabel };
   }
   if (g.variant === 'compare') {
-    cap('compareLeftTitle', g.compareLeftTitle, 26);
-    cap('compareRightTitle', g.compareRightTitle, 26);
+    cap('compareTitle', g.compareLeftTitle, v);
+    cap('compareTitle', g.compareRightTitle, v);
     [...(g.compareLeft || []), ...(g.compareRight || [])]
-      .forEach((t, i) => cap(`hanay ${i + 1}`, t, 62));
+      .forEach(t => cap('compareItem', t, v));
     design.compare = {
       leftTitle:  g.compareLeftTitle,
       left:       (g.compareLeft  || []).slice(0, 4),
@@ -151,7 +138,7 @@ function validate(g, ctx) {
   }
   if (g.variant === 'cta') {
     // MATIGAS. Pindutan ito — hindi ito lumalaki kasama ng teksto.
-    cap('ctaLabel', g.ctaLabel, 18, true);
+    cap('ctaLabel', g.ctaLabel, v);
     design.cta = g.ctaLabel;
   }
 
@@ -173,8 +160,6 @@ function validate(g, ctx) {
     if (design.items.length < 2) {
       throw new Error(`Kailangan ng 2-3 label sa showcase (mayroong ${design.items.length})`);
     }
-    const tooLong = design.items.find(t => t.length > 22);
-    if (tooLong) throw new Error(`Sobrang haba ng label: "${tooLong}"`);
   }
 
   const tags = (g.hashtags || []).map(t => (t.startsWith('#') ? t : '#' + t));

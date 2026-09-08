@@ -442,6 +442,61 @@ for (const [label, patch] of mustFail) {
              ctaLabel: 'Message us' }));
 }
 
+/* ---------- 3a4b. iisa ang hangganan ng prompt at ng validator ---------- */
+{
+  // Ito ang sira, dalawang beses sa magkasunod na araw.
+  //
+  // Una: sinabi ng prompt na "statValue (max 8 chars)" at walang nagpatupad.
+  // Dalawang post ang lumabas na sira.
+  //
+  // Pangalawa: nagpatupad ang validator, pero hiling pa rin ang prompt —
+  // nakabaon sa talata, walang bakod sa schema. Tatlong draft ang natanggihan
+  // sa isang araw at nawala ang post. Hindi mali ang hangganan; hindi ito
+  // nakarating sa modelo bilang utos.
+  //
+  // Kaya iisa na ang pinagmumulan. Ang sinusukat ng validator ang mismong
+  // ipinapadala bilang maxLength. Kapag naglayo sila, dito ito sisigaw.
+  const { limitFor } = require('./limits');
+  const pairs = [
+    ['eyebrow', 'eyebrow'], ['headline', 'headline'], ['body', 'body'],
+    ['statValue', 'statValue'], ['statLabel', 'statLabel'],
+    ['compareLeftTitle', 'compareTitle'], ['compareRightTitle', 'compareTitle'],
+    ['ctaLabel', 'ctaLabel'],
+  ];
+  const arrays = [['items', 'item'], ['compareLeft', 'compareItem'], ['compareRight', 'compareItem']];
+
+  const drift = [];
+  for (const variant of ALL_VARIANTS) {
+    const ctx = { ...pick(new Date('2026-09-08T06:00:00+08:00'), 0), variant };
+    const props = geminiBody(ctx).generationConfig.responseSchema.properties;
+    for (const [key, field] of pairs) {
+      const want = limitFor(field, variant);
+      if (props[key].maxLength !== want) drift.push(`${variant}.${key}: ${props[key].maxLength} vs ${want}`);
+    }
+    for (const [key, field] of arrays) {
+      const want = limitFor(field, variant);
+      if (props[key].items.maxLength !== want) drift.push(`${variant}.${key}[]: ${props[key].items.maxLength} vs ${want}`);
+    }
+  }
+  check('hangganan: pareho ang schema at ang validator', drift.length === 0,
+        drift.slice(0, 3).join(' · ') || `${ALL_VARIANTS.length} variant, walang naglayo`);
+
+  // Ang bilang ay bilang. Kailangang makita ito ng modelo, hindi lang mahulaan.
+  const statProps = geminiBody({ ...pick(new Date('2026-09-08T06:00:00+08:00'), 0), variant: 'stat' })
+    .generationConfig.responseSchema.properties;
+  check('hangganan: sinasabi sa modelo na bilang ang statValue',
+        /figure ONLY/i.test(statProps.statValue.description || ''),
+        (statProps.statValue.description || '').slice(0, 50));
+
+  // Ang tunay na sagot ay dapat kasya. Kung hindi, sobrang higpit natin —
+  // at ang bawat tinanggihang draft ay isa sa dalawampu nating request.
+  const real = { eyebrow: 'Why the count matters', statValue: '1 in 5',
+                 statLabel: 'who confirmed will not arrive', ctaLabel: 'Message us' };
+  const tight = Object.entries(real).filter(([k, t]) => t.length > limitFor(k, 'stat'));
+  check('hangganan: kasya ang totoong laman', tight.length === 0,
+        tight.map(([k, t]) => `${k}=${t.length}`).join(', ') || 'kasya lahat');
+}
+
 /* ---------- 3a5. may hakbang ang auto-fit para sa bawat malaking teksto ---------- */
 {
   // May auto-fit ang template — tumatakbo ito, at may tatlong hakbang. Pero

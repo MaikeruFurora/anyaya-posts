@@ -1,3 +1,4 @@
+const { limitFor } = require('./limits');
 /**
  * Anyaya Designs — ang utak ng araw-araw na post.
  *
@@ -388,6 +389,23 @@ function pick(when = new Date(), variation = 0) {
  *   mali — at sa 11 guardrail, ang isang tama ay wala nang post sa buong araw.
  */
 function geminiBody(p, rejected) {
+  // Ang hangganan ay ipinapadala bilang `maxLength`, hindi bilang pakiusap sa
+  // gitna ng talata. Iisa ang pinagmumulan nila at ng validate.js — tingnan
+  // ang bot/limits.js kung bakit.
+  //
+  // Noong nakasulat lang ito sa prosa, hindi ito sinunod: 57 titik ang
+  // ipinasok sa kahong para sa 8, at nang magpatupad ang validator ay tatlong
+  // draft ang natanggihan sa isang araw. Ang hiling ay hindi bakod.
+  const str = (field, note) => ({
+    type: 'STRING',
+    maxLength: limitFor(field, p.variant),
+    ...(note ? { description: note } : {}),
+  });
+  const arr = field => ({
+    type: 'ARRAY',
+    items: { type: 'STRING', maxLength: limitFor(field, p.variant) },
+  });
+
   const focus = p.subject === 'craft'
     ? 'the PRINTED CRAFT INVITATION CARDS. Write about paper, ink, and the object in a hand. Mention the RSVP website once at most, and only if the angle asks for it.'
     : 'the LIVE RSVP WEBSITE. Mention the printed cards once at most, and only if the angle asks for it.';
@@ -425,17 +443,23 @@ function geminiBody(p, rejected) {
         type: 'OBJECT',
         properties: {
           variant:           { type: 'STRING' },
-          eyebrow:           { type: 'STRING' },
-          headline:          { type: 'STRING' },
-          body:              { type: 'STRING' },
-          items:             { type: 'ARRAY', items: { type: 'STRING' } },
-          statValue:         { type: 'STRING' },
-          statLabel:         { type: 'STRING' },
-          compareLeftTitle:  { type: 'STRING' },
-          compareLeft:       { type: 'ARRAY', items: { type: 'STRING' } },
-          compareRightTitle: { type: 'STRING' },
-          compareRight:      { type: 'ARRAY', items: { type: 'STRING' } },
-          ctaLabel:          { type: 'STRING' },
+          eyebrow:           str('eyebrow', '2-4 words, like a label.'),
+          headline:          str('headline'),
+          body:              str('body'),
+          items:             arr('item'),
+          // Bilang ito, hindi parirala. Nasa 252px ang kahon nito — ginawa
+          // para sa "1 in 5". Noong Setyembre 5 at 8 ay pangungusap ang
+          // ipinasok dito, at umapaw ang larawan sa magkabilang gilid.
+          statValue:         str('statValue',
+                               'A figure ONLY: a number, percent or ratio. ' +
+                               'Examples: "1 in 5", "72%", "3 of 10", "48 hrs". ' +
+                               'Never a phrase, never a sentence.'),
+          statLabel:         str('statLabel', 'What the figure counts.'),
+          compareLeftTitle:  str('compareTitle'),
+          compareLeft:       arr('compareItem'),
+          compareRightTitle: str('compareTitle'),
+          compareRight:      arr('compareItem'),
+          ctaLabel:          str('ctaLabel', 'The words inside the button.'),
           caption:           { type: 'STRING' },
           hashtags:          { type: 'ARRAY', items: { type: 'STRING' } },
         },

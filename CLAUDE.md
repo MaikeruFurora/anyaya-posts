@@ -36,6 +36,7 @@ Sinusulat ng AI, may branded na disenyo, at ang may-ari ang nag-a-approve.
 
 bot/
   content.js          6 pillar, 121 angle, ang system prompt. DITO ang laman.
+  limits.js           hangganan ng teksto sa larawan. IISANG pinagmumulan.
   validate.js         guardrail sa caption AT sa teksto ng larawan.
   gemini.js           ang tawag sa Gemini. Tatlong modelo, may kapalit.
   http.js             fetch na may ulit, may timeout, at may bibig.
@@ -144,6 +145,15 @@ sa kasangkapang nakapirmi ang laki (ang bilang sa 252px, ang label ng
 pindutan); maluwag na may palugit para sa dumadaloy sa bloke ng teksto —
 dalawampung request lang tayo kada araw, at ang halos-tama ay hindi dapat
 magpasimula ng bagong draft.
+
+At isa pang aral, mula sa mismong lunas: **ang hangganan ay dapat bakod, hindi
+hiling.** Nang magpatupad ang validator pero nakabaon pa rin sa prosa ang bilang,
+tatlong draft ang natanggihan sa isang araw at nawala ang post — hindi dahil
+mali ang hangganan, kundi dahil hindi ito nakarating sa modelo bilang utos.
+Nasa `bot/limits.js` na ngayon ang mga bilang, at doon kumukuha ang dalawa: ang
+`validate.js` na tumatanggi, at ang `responseSchema` na ipinapadala sa Gemini
+bilang `maxLength`. Huwag kang mag-hard-code ng bilang sa alinman — may test na
+naghahambing sa kanila sa lahat ng pitong variant.
 
 At may auto-fit na pala ang template mula pa noon — tumatakbo, may tatlong
 hakbang, pero walang hakbang para sa `.bignum`. Sinusukat pa nito ang teksto
